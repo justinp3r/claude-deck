@@ -1,0 +1,12 @@
+# Arduino-Build-Ausgaben (arduino-cli legt sie im Sketch-Ordner ab, wenn man
+# --output-dir setzt)
+build/
+*.bin
+*.elf
+*.map
+
+# macOS
+.DS_Store
+
+# Laufzeitdaten der Bridge liegen ausserhalb des Repos (~/.claude-dashboard/),
+# hier steht nichts davon.

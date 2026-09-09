@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/permission-request.mjs\"",
+            "timeout": 60,
+            "statusMessage": "Fragt das Panel"
+          }
+        ]
+      }
+    ]
+  }
+}

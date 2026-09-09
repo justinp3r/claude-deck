@@ -1,0 +1,416 @@
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "lvgl_port.h"
+#include "lvgl.h"
+#include "esp_log.h"
+#include "esp_err.h"
+#include "esp_timer.h"
+#include "user_config.h"
+#include "driver/gpio.h"
+#include "driver/spi_master.h"
+#include "esp_lcd_io_spi.h"
+#include "esp_lcd_panel_ops.h"
+#include "esp_lcd_panel_io.h"
+#include "src/axs15231b/esp_lcd_axs15231b.h"
+#include "src/tca9554/esp_io_expander_tca9554.h"
+#include "ui_panel.h"
+
+#include "i2c_bsp.h"
+
+static const char *TAG = "lvgl_port";
+static SemaphoreHandle_t lvgl_mux = NULL;
+
+static uint16_t *trans_buf_1 = NULL; 
+uint8_t *lvgl_dest = NULL;                //旋转buffer
+static SemaphoreHandle_t flush_done_semaphore;
+static esp_io_expander_handle_t io_expander = NULL;
+
+#define LCD_BIT_PER_PIXEL 16
+#define BYTES_PER_PIXEL (LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_RGB565))
+#define BUFF_SIZE (EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * BYTES_PER_PIXEL)
+
+
+static const axs15231b_lcd_init_cmd_t lcd_init_cmds[] = 
+{
+  {0x11, (uint8_t []){0x00}, 0, 100},
+  {0x29, (uint8_t []){0x00}, 0, 100},
+};
+
+static bool example_notify_lvgl_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx)
+{
+  BaseType_t TaskWoken;
+  xSemaphoreGiveFromISR(flush_done_semaphore,&TaskWoken);
+  return false;
+}
+
+static void example_increase_lvgl_tick(void *arg)
+{
+  lv_tick_inc(LVGL_TICK_PERIOD_MS);
+}
+
+static void example_lvgl_flush_cb(lv_display_t * disp, const lv_area_t * area, uint8_t * color_p)
+{
+  esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t)lv_display_get_user_data(disp);
+  lv_draw_sw_rgb565_swap(color_p, lv_area_get_width(area) * lv_area_get_height(area));
+#if (Rotated == USER_DISP_ROT_90)
+  lv_display_rotation_t rotation = lv_display_get_rotation(disp);
+  lv_area_t rotated_area;
+  if(rotation != LV_DISPLAY_ROTATION_0)
+  {
+    lv_color_format_t cf = lv_display_get_color_format(disp);
+    /*Calculate the position of the rotated area*/
+    rotated_area = *area;
+    lv_display_rotate_area(disp, &rotated_area);
+    /*Calculate the source stride (bytes in a line) from the width of the area*/
+    uint32_t src_stride = lv_draw_buf_width_to_stride(lv_area_get_width(area), cf);
+    /*Calculate the stride of the destination (rotated) area too*/
+    uint32_t dest_stride = lv_draw_buf_width_to_stride(lv_area_get_width(&rotated_area), cf);
+    /*Have a buffer to store the rotated area and perform the rotation*/
+    
+    int32_t src_w = lv_area_get_width(area);
+    int32_t src_h = lv_area_get_height(area);
+    lv_draw_sw_rotate(color_p, lvgl_dest, src_w, src_h, src_stride, dest_stride, rotation, cf);
+    /*Use the rotated area and rotated buffer from now on*/
+    area = &rotated_area;
+  }
+
+  const int flush_coun = (LVGL_SPIRAM_BUFF_LEN / LVGL_DMA_BUFF_LEN);
+  const int offgap = (EXAMPLE_LCD_V_RES / flush_coun);
+  const int dmalen = (LVGL_DMA_BUFF_LEN / 2);
+  int offsetx1 = 0;
+  int offsety1 = 0;
+  int offsetx2 = EXAMPLE_LCD_H_RES;
+  int offsety2 = offgap;
+
+  uint16_t *map = (uint16_t *)lvgl_dest;
+  xSemaphoreGive(flush_done_semaphore);
+  for(int i = 0; i<flush_coun; i++)
+  {
+    xSemaphoreTake(flush_done_semaphore,portMAX_DELAY);
+    memcpy(trans_buf_1,map,LVGL_DMA_BUFF_LEN);
+    esp_lcd_panel_draw_bitmap(panel_handle, offsetx1, offsety1, offsetx2, offsety2, trans_buf_1);
+    offsety1 += offgap;
+    offsety2 += offgap;
+    map += dmalen;
+  }
+  xSemaphoreTake(flush_done_semaphore,portMAX_DELAY);
+  lv_disp_flush_ready(disp);
+#else
+  const int flush_coun = (LVGL_SPIRAM_BUFF_LEN / LVGL_DMA_BUFF_LEN);
+  const int offgap = (EXAMPLE_LCD_V_RES / flush_coun);
+  const int dmalen = (LVGL_DMA_BUFF_LEN / 2);
+  int offsetx1 = 0;
+  int offsety1 = 0;
+  int offsetx2 = EXAMPLE_LCD_H_RES;
+  int offsety2 = offgap;
+
+  uint16_t *map = (uint16_t *)color_p;
+  xSemaphoreGive(flush_done_semaphore);
+  for(int i = 0; i<flush_coun; i++)
+  {
+    xSemaphoreTake(flush_done_semaphore,portMAX_DELAY);
+    memcpy(trans_buf_1,map,LVGL_DMA_BUFF_LEN);
+    esp_lcd_panel_draw_bitmap(panel_handle, offsetx1, offsety1, offsetx2, offsety2, trans_buf_1);
+    offsety1 += offgap;
+    offsety2 += offgap;
+    map += dmalen;
+  }
+  xSemaphoreTake(flush_done_semaphore,portMAX_DELAY);
+  lv_disp_flush_ready(disp);
+#endif
+}
+static void TouchInputReadCallback(lv_indev_t * indev, lv_indev_data_t *indevData)
+{
+  uint8_t read_touchpad_cmd[11] = {0xb5, 0xab, 0xa5, 0x5a, 0x0, 0x0, 0x0, 0x0e,0x0, 0x0, 0x0};
+  uint8_t buff[32] = {0};
+
+  /* i2c_master_touch_write_read und NICHT i2c_master_write_read_dev: der
+   * Touchcontroller haengt an Bus 1 (i2c_bsp.c legt ihn auf
+   * user_i2c_port1_handle), die generische Funktion wartet aber auf Bus 0.
+   * Mit der falschen Funktion liefert der Controller Phantomberuehrungen mit
+   * zufaelligen Koordinaten - im Waveshare-Beispiel steht das so drin. */
+  esp_err_t terr = i2c_master_touch_write_read(disp_touch_dev_handle,read_touchpad_cmd,11,buff,32);
+
+  uint16_t px = (((uint16_t)buff[2] & 0x0f) << 8) | (uint16_t)buff[3];
+  uint16_t py = (((uint16_t)buff[4] & 0x0f) << 8) | (uint16_t)buff[5];
+  bool raw_down = (terr == ESP_OK) && (buff[1] > 0 && buff[1] < 5) &&
+                  (px <= EXAMPLE_LCD_V_RES) && (py <= EXAMPLE_LCD_H_RES);
+
+  /* --- Entprellung und Wischschwelle ---
+   *
+   * Zwei Probleme, die sich widersprechen:
+   *
+   * 1. Ein einzelner gestoerter I2C-Frame sieht aus wie eine Beruehrung an
+   *    zufaelliger Stelle. Auf einem Freigabegeraet ist das der gefaehrlichste
+   *    denkbare Fehler. Deshalb zaehlt eine Beruehrung erst, wenn zwei
+   *    aufeinanderfolgende Messungen sie bestaetigen und dabei nah beieinander
+   *    liegen.
+   *
+   * 2. Das Panel meldet waehrend einer ruhigen Beruehrung um einige Pixel
+   *    schwankende Werte. LVGL summiert jede Bewegung auf und erkennt ab 50 px
+   *    eine Wischgeste - ohne Gegenmittel wird jeder Tipp zum Wisch.
+   *
+   * Die Loesung ist NICHT, den Punkt einzufrieren: LVGL setzt seine Summe auf
+   * null zurueck, sobald sich der Punkt zwischen zwei Messungen um weniger als
+   * drei Pixel bewegt. Ein eingefrorener Punkt macht damit jede Wischgeste
+   * unmoeglich. Stattdessen wird ab dem Druckbeginn gemessen: solange der
+   * Finger innerhalb von TOUCH_SLOP um seinen Startpunkt bleibt, wird immer
+   * der Startpunkt gemeldet (kein Zittern, also kein Wisch aus einem Tipp).
+   * Ueberschreitet er die Schwelle einmal, folgt die Meldung dem Finger
+   * ungefiltert - dann ist es ein echter Wisch und darf sich aufsummieren. */
+#define TOUCH_CONFIRM   2      /* Messungen, die uebereinstimmen muessen */
+#define TOUCH_NEAR     40      /* px, innerhalb derer sie als gleich gelten */
+#define TOUCH_SLOP     20      /* px Abstand vom Start, ab dem es ein Wisch ist */
+
+  static uint8_t  confirm = 0;
+  static uint16_t cand_x = 0, cand_y = 0;     /* Kandidat waehrend der Pruefung */
+  static uint16_t org_x = 0, org_y = 0;       /* Startpunkt des Drucks */
+  static uint16_t rep_x = 0, rep_y = 0;       /* gemeldeter Punkt */
+  static bool     reported = false;
+  static bool     sliding  = false;           /* Schwelle ueberschritten? */
+
+  if (!raw_down) {
+    confirm = 0;
+    reported = false;
+    sliding = false;
+    indevData->state = LV_INDEV_STATE_RELEASED;
+  } else if (!reported) {
+    /* Bestaetigungsphase: nur hier wird auf Naehe geprueft. Sie soll einen
+     * einzelnen Stoerframe aussortieren, nicht eine schnelle Bewegung - waere
+     * die Pruefung auch spaeter aktiv, zerfiele jeder Wisch in Fragmente,
+     * weil der Finger zwischen zwei Messungen weiter als TOUCH_NEAR springt. */
+    int dx = (int)px - (int)cand_x, dy = (int)py - (int)cand_y;
+    bool near = (dx < TOUCH_NEAR && dx > -TOUCH_NEAR && dy < TOUCH_NEAR && dy > -TOUCH_NEAR);
+
+    if (confirm == 0 || !near) { cand_x = px; cand_y = py; confirm = 1; }
+    else                       { cand_x = px; cand_y = py; confirm++;   }
+
+    if (confirm >= TOUCH_CONFIRM) {
+      org_x = cand_x; org_y = cand_y;
+      rep_x = cand_x; rep_y = cand_y;
+      reported = true;
+      sliding  = false;
+      indevData->state   = LV_INDEV_STATE_PRESSED;
+      indevData->point.x = rep_y;
+      indevData->point.y = (EXAMPLE_LCD_V_RES - rep_x);
+    } else {
+      indevData->state = LV_INDEV_STATE_RELEASED;   /* noch unbestaetigt */
+    }
+  } else {
+    /* Bestaetigt: ab jetzt dem Finger folgen, egal wie weit er springt. */
+    if (!sliding) {
+      int ox = (int)px - (int)org_x, oy = (int)py - (int)org_y;
+      if (ox > TOUCH_SLOP || ox < -TOUCH_SLOP || oy > TOUCH_SLOP || oy < -TOUCH_SLOP) {
+        sliding = true;
+      }
+    }
+    if (sliding) { rep_x = px; rep_y = py; }   /* echter Wisch */
+    else         { rep_x = org_x; rep_y = org_y; }  /* Zittern verschlucken */
+
+    indevData->state   = LV_INDEV_STATE_PRESSED;
+    indevData->point.x = rep_y;
+    indevData->point.y = (EXAMPLE_LCD_V_RES - rep_x);
+  }
+
+#if TOUCH_DEBUG
+  static bool was = false;
+  bool now_down = (indevData->state == LV_INDEV_STATE_PRESSED);
+  if (now_down && !was) {
+    printf("{\"t\":\"touch\",\"raw\":[%u,%u],\"screen\":[%d,%d]}\n",
+           rep_x, rep_y,
+           (int)(EXAMPLE_LCD_V_RES - rep_x), (int)(EXAMPLE_LCD_H_RES - 1 - rep_y));
+  }
+  was = now_down;
+  static uint32_t beat = 0;
+  uint32_t nw = lv_tick_get();
+  if (nw - beat > 2000) {
+    beat = nw;
+    printf("{\"t\":\"tstat\",\"i2c\":%d,\"b1\":%u,\"conf\":%u}\n", (int)terr, buff[1], confirm);
+  }
+#endif
+}
+
+static bool example_lvgl_lock(int timeout_ms)
+{
+  const TickType_t timeout_ticks = (timeout_ms == -1) ? portMAX_DELAY : pdMS_TO_TICKS(timeout_ms);
+  return xSemaphoreTake(lvgl_mux, timeout_ticks) == pdTRUE;       
+}
+
+static void example_lvgl_unlock(void)
+{
+  assert(lvgl_mux && "bsp_display_start must be called first");
+  xSemaphoreGive(lvgl_mux);
+}
+
+/* LVGL laeuft in einem eigenen FreeRTOS-Task. Jeder Zugriff auf lv_* von aussen
+ * (also aus loop() oder aus dem Serial-Handler) muss durch dieses Lock. */
+bool lvgl_port_lock(int timeout_ms)
+{
+  if (lvgl_mux == NULL) return false;
+  return example_lvgl_lock(timeout_ms);
+}
+
+void lvgl_port_unlock(void)
+{
+  example_lvgl_unlock();
+}
+
+void example_lvgl_port_task(void *arg)
+{
+  uint32_t task_delay_ms = LVGL_TASK_MAX_DELAY_MS;
+  for(;;)
+  {
+    if (example_lvgl_lock(-1)) 
+    {
+      task_delay_ms = lv_timer_handler();
+      //Release the mutex
+      example_lvgl_unlock();
+    }
+    if (task_delay_ms > LVGL_TASK_MAX_DELAY_MS)
+    {
+      task_delay_ms = LVGL_TASK_MAX_DELAY_MS;
+    } else if (task_delay_ms < LVGL_TASK_MIN_DELAY_MS)
+    {
+      task_delay_ms = LVGL_TASK_MIN_DELAY_MS;
+    }
+    vTaskDelay(pdMS_TO_TICKS(task_delay_ms));
+  }
+}
+
+static void example_lcd_pwm_off_early(void)
+{
+  gpio_config_t gpio_conf = {};
+  gpio_conf.intr_type = GPIO_INTR_DISABLE;
+  gpio_conf.mode = GPIO_MODE_OUTPUT;
+  gpio_conf.pin_bit_mask = ((uint64_t)1 << EXAMPLE_PIN_NUM_BK_LIGHT);
+  gpio_conf.pull_down_en = GPIO_PULLDOWN_ENABLE;
+  gpio_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+  ESP_ERROR_CHECK(gpio_config(&gpio_conf));
+  ESP_ERROR_CHECK(gpio_set_level(EXAMPLE_PIN_NUM_BK_LIGHT, 0));
+}
+
+static void example_lcd_exio_init(void)
+{
+  if (io_expander == NULL) {
+    i2c_master_bus_handle_t tca9554_i2c_bus = NULL;
+    ESP_ERROR_CHECK(i2c_master_get_bus_handle(0, &tca9554_i2c_bus));
+    ESP_ERROR_CHECK(esp_io_expander_new_i2c_tca9554(tca9554_i2c_bus, ESP_IO_EXPANDER_I2C_TCA9554_ADDRESS_000, &io_expander));
+  }
+
+  ESP_ERROR_CHECK(esp_io_expander_set_dir(io_expander, EXAMPLE_EXIO_PIN_TOUCH_INT, IO_EXPANDER_INPUT));
+  ESP_ERROR_CHECK(esp_io_expander_set_dir(io_expander, EXAMPLE_EXIO_PIN_BL_EN | EXAMPLE_EXIO_PIN_LCD_RST, IO_EXPANDER_OUTPUT));
+  ESP_ERROR_CHECK(esp_io_expander_set_level(io_expander, EXAMPLE_EXIO_PIN_BL_EN, 0));
+  ESP_ERROR_CHECK(esp_io_expander_set_level(io_expander, EXAMPLE_EXIO_PIN_LCD_RST, 1));
+}
+
+static void example_lcd_reset(void)
+{
+  ESP_ERROR_CHECK(esp_io_expander_set_level(io_expander, EXAMPLE_EXIO_PIN_LCD_RST, 1));
+  vTaskDelay(pdMS_TO_TICKS(30));
+  ESP_ERROR_CHECK(esp_io_expander_set_level(io_expander, EXAMPLE_EXIO_PIN_LCD_RST, 0));
+  vTaskDelay(pdMS_TO_TICKS(250));
+  ESP_ERROR_CHECK(esp_io_expander_set_level(io_expander, EXAMPLE_EXIO_PIN_LCD_RST, 1));
+  vTaskDelay(pdMS_TO_TICKS(30));
+}
+
+static void example_lcd_backlight_set(bool enable)
+{
+  ESP_ERROR_CHECK(gpio_set_level(EXAMPLE_PIN_NUM_BK_LIGHT, enable ? 1 : 0));
+  ESP_ERROR_CHECK(esp_io_expander_set_level(io_expander, EXAMPLE_EXIO_PIN_BL_EN, enable ? 1 : 0));
+}
+
+void lvgl_port_init(void)
+{
+  flush_done_semaphore = xSemaphoreCreateBinary();
+  assert(flush_done_semaphore);
+  ESP_LOGI(TAG, "Initialize LCD reset and backlight");
+  example_lcd_pwm_off_early();
+  example_lcd_exio_init();
+
+  ESP_LOGI(TAG, "Initialize QSPI bus");
+  spi_bus_config_t buscfg = {};
+    buscfg.data0_io_num = EXAMPLE_PIN_NUM_LCD_DATA0;
+    buscfg.data1_io_num = EXAMPLE_PIN_NUM_LCD_DATA1;
+    buscfg.sclk_io_num = EXAMPLE_PIN_NUM_LCD_PCLK;
+    buscfg.data2_io_num = EXAMPLE_PIN_NUM_LCD_DATA2;
+    buscfg.data3_io_num = EXAMPLE_PIN_NUM_LCD_DATA3;
+    buscfg.max_transfer_sz = LVGL_DMA_BUFF_LEN;
+  ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &buscfg, SPI_DMA_CH_AUTO));
+
+  ESP_LOGI(TAG, "Install panel IO");
+	  esp_lcd_panel_io_handle_t panel_io = NULL;
+    esp_lcd_panel_handle_t panel = NULL;
+    
+  esp_lcd_panel_io_spi_config_t io_config = {};
+	io_config.cs_gpio_num = EXAMPLE_PIN_NUM_LCD_CS;                 
+    io_config.dc_gpio_num = -1;          
+    io_config.spi_mode = 3;              
+    io_config.pclk_hz = 40 * 1000 * 1000;
+    io_config.trans_queue_depth = 10;    
+    io_config.on_color_trans_done = example_notify_lvgl_flush_ready; 
+    //io_config.user_ctx = &disp_drv,         
+    io_config.lcd_cmd_bits = 32;         
+    io_config.lcd_param_bits = 8;        
+    io_config.flags.quad_mode = true;                         
+	ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(LCD_HOST, &io_config, &panel_io));
+    
+  axs15231b_vendor_config_t vendor_config = {};
+    vendor_config.flags.use_qspi_interface = 1;
+    vendor_config.init_cmds = lcd_init_cmds;
+    vendor_config.init_cmds_size = sizeof(lcd_init_cmds) / sizeof(lcd_init_cmds[0]);
+    
+  esp_lcd_panel_dev_config_t panel_config = {};
+    panel_config.reset_gpio_num = -1;
+    panel_config.rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB;
+    panel_config.bits_per_pixel = LCD_BIT_PER_PIXEL;
+    panel_config.vendor_config = &vendor_config;
+
+  ESP_LOGI(TAG, "Install panel driver");
+  ESP_ERROR_CHECK(esp_lcd_new_panel_axs15231b(panel_io, &panel_config, &panel));
+
+  example_lcd_reset();
+  ESP_ERROR_CHECK(esp_lcd_panel_init(panel));
+  example_lcd_backlight_set(true);
+
+  lv_init();
+
+  lv_display_t * disp = lv_display_create(EXAMPLE_LCD_H_RES, EXAMPLE_LCD_V_RES);  /* 以水平和垂直分辨率（像素）进行基本初始化 */
+  lv_display_set_flush_cb(disp, example_lvgl_flush_cb);                           /* 设置刷新回调函数以绘制到显示屏 */
+  
+  uint8_t *buffer_1 = NULL;
+  uint8_t *buffer_2 = NULL;
+  buffer_1 = (uint8_t *)heap_caps_malloc(BUFF_SIZE, MALLOC_CAP_SPIRAM);
+  buffer_2 = (uint8_t *)heap_caps_malloc(BUFF_SIZE, MALLOC_CAP_SPIRAM);
+  assert(buffer_1);
+  assert(buffer_2);
+	trans_buf_1 = (uint16_t *)heap_caps_malloc(LVGL_DMA_BUFF_LEN, MALLOC_CAP_DMA);
+	assert(trans_buf_1);
+  lv_display_set_buffers(disp, buffer_1, buffer_2, BUFF_SIZE, LV_DISPLAY_RENDER_MODE_FULL);
+  lv_display_set_user_data(disp, panel);
+#if (Rotated == USER_DISP_ROT_90)
+    lvgl_dest = (uint8_t *)heap_caps_malloc(BUFF_SIZE, MALLOC_CAP_SPIRAM); //旋转buf
+    lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_270);
+#endif
+  /*port indev*/
+  lv_indev_t *touch_indev = NULL;
+  touch_indev = lv_indev_create();
+  lv_indev_set_type(touch_indev, LV_INDEV_TYPE_POINTER);
+  lv_indev_set_read_cb(touch_indev, TouchInputReadCallback);
+
+  ESP_LOGI(TAG, "Install LVGL tick timer");
+  esp_timer_create_args_t lvgl_tick_timer_args = {};
+    lvgl_tick_timer_args.callback = &example_increase_lvgl_tick;
+    lvgl_tick_timer_args.name = "lvgl_tick";
+  esp_timer_handle_t lvgl_tick_timer = NULL;
+  ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
+  ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer,LVGL_TICK_PERIOD_MS * 1000));
+
+  lvgl_mux = xSemaphoreCreateMutex();
+  assert(lvgl_mux);
+  xTaskCreatePinnedToCore(example_lvgl_port_task, "LVGL", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL,0);
+  if (example_lvgl_lock(-1))
+  {
+    ui_panel_init();
+    example_lvgl_unlock();
+  }
+}

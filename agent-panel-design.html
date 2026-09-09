@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent-Panel 640×172 — Entwurf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#D7DBD4;
+    --paper-2:#C9CEC7;
+    --ink:#1C2225;
+    --ink-2:#586460;
+    --rule:#A7B0AA;
+    --mark:#2F6FB5;
+    --sans:'IBM Plex Sans',system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--sans);font-size:16px;line-height:1.6;
+    padding:0 14px 80px;
+  }
+  .col{max-width:720px;margin:0 auto}
+
+  header{padding:40px 0 0}
+  .desig{font-family:var(--mono);font-size:13px;letter-spacing:.04em;color:var(--ink-2)}
+  h1{
+    font-size:clamp(30px,8vw,46px);line-height:1.02;font-weight:600;
+    letter-spacing:-.02em;margin:14px 0 18px;max-width:14ch;
+  }
+  .spec{
+    border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
+    font-family:var(--mono);font-size:13px;color:var(--ink-2);
+    display:flex;flex-wrap:wrap;gap:4px 20px;padding:10px 0;margin-bottom:34px;
+  }
+  .spec b{font-weight:500;color:var(--ink)}
+
+  p{max-width:62ch;margin:0 0 16px}
+  .lede{font-size:18px;max-width:56ch}
+
+  section{margin:52px 0 0}
+  .name{
+    font-family:var(--mono);font-size:14px;color:var(--mark);
+    margin-bottom:4px;
+  }
+  h2{font-size:22px;font-weight:600;letter-spacing:-.01em;margin:0 0 10px}
+  h3{font-size:17px;font-weight:600;margin:34px 0 8px}
+
+  .panel{margin:18px 0 14px}
+  .panel svg{width:100%;height:auto;display:block;border-radius:9px}
+  .cap{
+    font-family:var(--mono);font-size:12.5px;color:var(--ink-2);
+    display:flex;justify-content:space-between;gap:16px;
+    padding-top:7px;border-top:1px solid var(--rule);
+  }
+  .cap span:last-child{text-align:right}
+
+  .note{
+    border-left:3px solid var(--mark);padding:2px 0 2px 14px;
+    margin:18px 0;max-width:60ch;
+  }
+  .note p{margin:0}
+
+  ul{max-width:60ch;padding-left:20px;margin:0 0 16px}
+  li{margin-bottom:9px}
+  code{font-family:var(--mono);font-size:.9em;background:var(--paper-2);padding:1px 5px;border-radius:3px}
+
+  .rules{margin-top:14px}
+  .rule{
+    display:grid;grid-template-columns:auto 1fr;gap:0 14px;
+    padding:16px 0;border-top:1px solid var(--rule);align-items:start;
+  }
+  .rule .mm{font-family:var(--mono);font-size:15px;font-weight:500;color:var(--mark);white-space:nowrap}
+  .rule p{margin:0}
+  .rule strong{display:block;font-weight:600;margin-bottom:2px}
+
+  footer{margin-top:56px;padding-top:14px;border-top:1px solid var(--rule);
+    font-family:var(--mono);font-size:12.5px;color:var(--ink-2)}
+
+  @keyframes breathe{0%,100%{opacity:1}50%{opacity:.32}}
+  .wait{animation:breathe 1.9s ease-in-out infinite}
+  @media (prefers-reduced-motion:reduce){.wait{animation:none}}
+</style>
+</head>
+<body>
+<div class="col">
+
+<header>
+  <div class="desig">ESP32-S3-Touch-LCD-3.49 · Case A</div>
+  <h1>Freigabe&shy;panel für Claude&nbsp;Code</h1>
+  <div class="spec">
+    <span><b>640 × 172 px</b></span>
+    <span><b>84,0 × 22,6 mm</b></span>
+    <span>194 ppi</span>
+    <span>7,62 px/mm</span>
+    <span>Ziel&shy;fläche ≥ 69 px</span>
+  </div>
+  <p class="lede">Sechs Zustände für ein Gerät, das neben der Tastatur steht und genau eine Frage beantwortet: darf dieser Agent das jetzt tun?</p>
+  <p>Auf deinem Handy siehst du die Panels unten in etwa vier Fünftel ihrer echten Größe. Was hier eng wirkt, ist auf dem Gerät genauso eng.</p>
+</header>
+
+<section>
+  <div class="name">ruhe</div>
+  <h2>Nichts zu tun</h2>
+  <p>Der häufigste Zustand. Keine Buttons, keine Kacheln, kein Rahmen. Nur wer läuft und wie lange schon.</p>
+  <div class="panel">
+    <svg viewBox="0 0 640 172" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ruhezustand mit drei laufenden Sessions">
+      <rect width="640" height="172" rx="9" fill="#08090A"/>
+      <text x="24" y="34" font-family="IBM Plex Mono, monospace" font-size="16" fill="#5E635F">3 sessions</text>
+      <text x="616" y="34" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="16" fill="#5E635F">21:14</text>
+
+      <circle cx="30" cy="72" r="5" fill="#1D9E75"/>
+      <text x="48" y="78" font-family="IBM Plex Mono, monospace" font-size="21" fill="#E6E5E1">backend-refactor</text>
+      <text x="616" y="78" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="18" fill="#6E7370">14 m</text>
+
+      <circle cx="30" cy="112" r="5" fill="#1D9E75"/>
+      <text x="48" y="118" font-family="IBM Plex Mono, monospace" font-size="21" fill="#E6E5E1">docs-sweep</text>
+      <text x="616" y="118" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="18" fill="#6E7370">3 m</text>
+
+      <circle cx="30" cy="152" r="5" fill="#4A4F4C"/>
+      <text x="48" y="158" font-family="IBM Plex Mono, monospace" font-size="21" fill="#8A8E8B">test-flake</text>
+      <text x="616" y="158" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="18" fill="#6E7370">idle</text>
+    </svg>
+  </div>
+  <div class="cap"><span>drei Zeilen à 40 px</span><span>Schrift 21 px = 2,8 mm</span></div>
+</section>
+
+<section>
+  <div class="name">freigabe · variante a</div>
+  <h2>Zwei Tasten</h2>
+  <p>Die naheliegende Form. Kachel links, Kontext in der Mitte, Entscheidung rechts. Beide Tasten sind 66 px hoch, also 8,7 mm. Das liegt knapp unter der Schwelle, ab der man sicher trifft.</p>
+  <div class="panel">
+    <svg viewBox="0 0 640 172" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Freigabeanfrage mit Accept- und Deny-Taste">
+      <rect width="640" height="172" rx="9" fill="#08090A"/>
+
+      <rect x="10" y="10" width="152" height="152" rx="11" fill="#141518" stroke="#292B2F"/>
+      <rect x="46" y="28" width="80" height="80" rx="18" fill="#1D3A5C"/>
+      <text x="86" y="83" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="30" fill="#8CB6E4">br</text>
+      <text x="86" y="140" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="18" fill="#B7BAB6">backend</text>
+
+      <circle class="wait" cx="184" cy="35" r="6" fill="#EF9F27"/>
+      <text x="199" y="41" font-family="IBM Plex Sans, sans-serif" font-size="17" fill="#C9CCC7">Freigabe angefordert</text>
+      <rect x="178" y="56" width="58" height="26" rx="6" fill="#26282C"/>
+      <text x="207" y="74" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="15" fill="#A9ACA8">Bash</text>
+      <text x="178" y="115" font-family="IBM Plex Mono, monospace" font-size="21" fill="#F0EFEC">git push origin</text>
+      <text x="178" y="141" font-family="IBM Plex Mono, monospace" font-size="21" fill="#F0EFEC">main --force</text>
+      <text x="178" y="163" font-family="IBM Plex Mono, monospace" font-size="14" fill="#6E7370">a4f1 · 12 s</text>
+
+      <rect x="462" y="10" width="168" height="66" rx="10" fill="#1D9E75"/>
+      <text x="546" y="51" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="23" font-weight="600" fill="#04342C">Accept</text>
+      <rect x="462" y="96" width="168" height="66" rx="10" fill="none" stroke="#E24B4A" stroke-width="2"/>
+      <text x="546" y="137" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="23" font-weight="600" fill="#F09595">Deny</text>
+    </svg>
+  </div>
+  <div class="cap"><span>Tasten 168 × 66 px = 22,0 × 8,7 mm</span><span>Abstand 20 px = 2,6 mm</span></div>
+  <div class="note">
+    <p>Beide Aktionen kosten gleich viel Aufwand, obwohl nur eine davon etwas kaputtmachen kann. Ein Fehlgriff auf 2,6 mm Abstand pusht mit <code>--force</code>.</p>
+  </div>
+</section>
+
+<section>
+  <div class="name">freigabe · variante b</div>
+  <h2>Wischen statt tippen</h2>
+  <p>Gleiche Fläche, andere Verteilung. Ablehnen bleibt ein Tipp, weil es die harmlose Antwort ist. Freigeben braucht einen Wisch über 100 px. Der Aufwand folgt der Konsequenz, nicht der Symmetrie.</p>
+  <div class="panel">
+    <svg viewBox="0 0 640 172" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Freigabeanfrage mit Deny-Taste und Wischgeste zum Freigeben">
+      <rect width="640" height="172" rx="9" fill="#08090A"/>
+
+      <rect x="10" y="10" width="152" height="152" rx="11" fill="#141518" stroke="#292B2F"/>
+      <rect x="46" y="28" width="80" height="80" rx="18" fill="#1D3A5C"/>
+      <text x="86" y="83" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="30" fill="#8CB6E4">br</text>
+      <text x="86" y="140" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="18" fill="#B7BAB6">backend</text>
+
+      <circle class="wait" cx="184" cy="35" r="6" fill="#EF9F27"/>
+      <text x="199" y="41" font-family="IBM Plex Sans, sans-serif" font-size="17" fill="#C9CCC7">Freigabe angefordert</text>
+      <rect x="178" y="56" width="58" height="26" rx="6" fill="#26282C"/>
+      <text x="207" y="74" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="15" fill="#A9ACA8">Bash</text>
+      <text x="178" y="115" font-family="IBM Plex Mono, monospace" font-size="21" fill="#F0EFEC">git push origin</text>
+      <text x="178" y="141" font-family="IBM Plex Mono, monospace" font-size="21" fill="#F0EFEC">main --force</text>
+      <text x="178" y="163" font-family="IBM Plex Mono, monospace" font-size="14" fill="#6E7370">a4f1 · 12 s</text>
+
+      <rect x="462" y="10" width="168" height="66" rx="10" fill="none" stroke="#E24B4A" stroke-width="2"/>
+      <text x="546" y="51" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="23" font-weight="600" fill="#F09595">Deny</text>
+
+      <rect x="462" y="96" width="168" height="66" rx="33" fill="#0D2620" stroke="#1D9E75"/>
+      <circle cx="495" cy="129" r="26" fill="#1D9E75"/>
+      <path d="M489 119 l10 10 l-10 10" fill="none" stroke="#04342C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="562" y="135" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="16" fill="#5DCAA5">wischen</text>
+    </svg>
+  </div>
+  <div class="cap"><span>Wischweg 100 px = 13,1 mm</span><span>Daumen ruht rechts</span></div>
+</section>
+
+<section>
+  <div class="name">warteschlange</div>
+  <h2>Mehr als einer fragt</h2>
+  <p>Der Zustand, der beim Bauen gern vergessen wird und im Betrieb sofort auftritt. Die Leiste links zeigt, wie viele warten und welchen du gerade beantwortest. Ohne sie beantwortest du irgendwann blind die falsche Anfrage.</p>
+  <div class="panel">
+    <svg viewBox="0 0 640 172" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Zwei wartende Anfragen mit Warteschlangenleiste links">
+      <rect width="640" height="172" rx="9" fill="#08090A"/>
+
+      <rect x="10" y="26" width="8" height="54" rx="4" fill="#EF9F27"/>
+      <rect x="10" y="92" width="8" height="54" rx="4" fill="#3A3D3B"/>
+
+      <rect x="34" y="10" width="140" height="152" rx="11" fill="#141518" stroke="#292B2F"/>
+      <rect x="64" y="28" width="80" height="80" rx="18" fill="#1D3A5C"/>
+      <text x="104" y="83" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="30" fill="#8CB6E4">br</text>
+      <text x="104" y="140" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="18" fill="#B7BAB6">backend</text>
+
+      <text x="192" y="41" font-family="IBM Plex Sans, sans-serif" font-size="17" fill="#EF9F27">1 von 2 warten</text>
+      <rect x="192" y="56" width="58" height="26" rx="6" fill="#26282C"/>
+      <text x="221" y="74" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="15" fill="#A9ACA8">Edit</text>
+      <text x="192" y="115" font-family="IBM Plex Mono, monospace" font-size="21" fill="#F0EFEC">src/auth/token.py</text>
+      <text x="192" y="141" font-family="IBM Plex Mono, monospace" font-size="18" fill="#9A9E9A">+42 −17</text>
+      <text x="192" y="163" font-family="IBM Plex Mono, monospace" font-size="14" fill="#6E7370">a4f1 · 4 s · danach docs-sweep</text>
+
+      <rect x="462" y="10" width="168" height="66" rx="10" fill="none" stroke="#E24B4A" stroke-width="2"/>
+      <text x="546" y="51" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="23" font-weight="600" fill="#F09595">Deny</text>
+      <rect x="462" y="96" width="168" height="66" rx="33" fill="#0D2620" stroke="#1D9E75"/>
+      <circle cx="495" cy="129" r="26" fill="#1D9E75"/>
+      <path d="M489 119 l10 10 l-10 10" fill="none" stroke="#04342C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="562" y="135" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="16" fill="#5DCAA5">wischen</text>
+    </svg>
+  </div>
+  <div class="cap"><span>Leiste 8 px breit</span><span>nächste Anfrage namentlich genannt</span></div>
+</section>
+
+<section>
+  <div class="name">detail</div>
+  <h2>Der ganze Befehl</h2>
+  <p>Ein Tipp auf die Kachel klappt den Kontext auf. Hier ist die volle Breite die einzige Ressource, die du hast, also verschwindet alles andere. Ein zweiter Tipp geht zurück.</p>
+  <div class="panel">
+    <svg viewBox="0 0 640 172" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Detailansicht mit vollständigem Befehl und Arbeitsverzeichnis">
+      <rect width="640" height="172" rx="9" fill="#08090A"/>
+      <text x="24" y="32" font-family="IBM Plex Mono, monospace" font-size="15" fill="#6E7370">Bash · backend-refactor</text>
+      <text x="616" y="32" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="15" fill="#6E7370">tippen zum Schließen</text>
+      <line x1="24" y1="46" x2="616" y2="46" stroke="#26282C"/>
+      <text x="24" y="78" font-family="IBM Plex Mono, monospace" font-size="20" fill="#F0EFEC">git push origin main --force</text>
+      <text x="24" y="106" font-family="IBM Plex Mono, monospace" font-size="17" fill="#9A9E9A">cwd ~/dev/api</text>
+      <text x="24" y="132" font-family="IBM Plex Mono, monospace" font-size="17" fill="#9A9E9A">3 commits auf origin werden überschrieben</text>
+      <text x="24" y="158" font-family="IBM Plex Mono, monospace" font-size="15" fill="#E27A4A">kein Backup-Branch vorhanden</text>
+    </svg>
+  </div>
+  <div class="cap"><span>volle Breite: 44 Zeichen bei 20 px</span><span>Warnung zuletzt, nicht zuerst</span></div>
+</section>
+
+<section>
+  <div class="name">getrennt</div>
+  <h2>Wenn die Brücke weg ist</h2>
+  <p>Das Gerät weiß nicht mehr, was läuft. Es sagt, was passiert ist und wo die Freigaben jetzt landen. Kein Ausrufezeichen, keine Entschuldigung.</p>
+  <div class="panel">
+    <svg viewBox="0 0 640 172" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Fehlerzustand, Bridge nicht erreichbar">
+      <rect width="640" height="172" rx="9" fill="#08090A"/>
+      <rect x="0" y="0" width="6" height="172" rx="3" fill="#A32D2D"/>
+      <text x="34" y="66" font-family="IBM Plex Sans, sans-serif" font-size="26" font-weight="600" fill="#F09595">Bridge nicht erreichbar</text>
+      <text x="34" y="102" font-family="IBM Plex Sans, sans-serif" font-size="18" fill="#B7BAB6">Freigaben laufen weiter im Terminal.</text>
+      <text x="34" y="140" font-family="IBM Plex Mono, monospace" font-size="16" fill="#6E7370">letzter Kontakt 21:09 · USB prüfen</text>
+    </svg>
+  </div>
+  <div class="cap"><span>roter Steg statt Vollfläche</span><span>zeigt Zustand, blendet nicht</span></div>
+</section>
+
+<section>
+  <h3>Vier Regeln, die aus dem Format folgen</h3>
+  <div class="rules">
+    <div class="rule">
+      <div class="mm">69 px</div>
+      <p><strong>Alles Antippbare misst mindestens 9 mm</strong>Bei 7,62 px/mm bleiben in der Höhe genau zwei Reihen. Eine dritte gibt es nicht, egal wie sehr du sie brauchst.</p>
+    </div>
+    <div class="rule">
+      <div class="mm">1 : 1</div>
+      <p><strong>Ein Zustand pro Bild</strong>Kein Zustand mischt sich mit einem anderen. Ruhe zeigt keine Buttons, Freigabe zeigt keine Sessionliste.</p>
+    </div>
+    <div class="rule">
+      <div class="mm">2 m</div>
+      <p><strong>Farbe trägt, Text ergänzt</strong>Aus zwei Metern liest du auf 22,6 mm Höhe nichts mehr. Bernstein heißt wartet, Türkis heißt läuft, Rot heißt kaputt. Der Text ist für den Moment, in dem du hinsiehst.</p>
+    </div>
+    <div class="rule">
+      <div class="mm">ask</div>
+      <p><strong>Der Ausfall gibt nichts frei</strong>Timeout, Verbindungsabbruch, Absturz: der Hook fällt auf <code>ask</code> zurück und die Frage landet im Terminal. Ein stummes Gerät darf nie ein zustimmendes sein.</p>
+    </div>
+  </div>
+</section>
+
+<footer>Entwurf · 640 × 172 px · Maße in mm bei 194 ppi</footer>
+
+</div>
+</body>
+</html>
