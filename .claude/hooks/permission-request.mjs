@@ -11,8 +11,8 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 
-const SOCK = path.join(os.homedir(), '.claude-dashboard', 'bridge.sock');
-const TTL  = Math.min(Math.max(Number(process.env.CLAUDE_DASHBOARD_TTL) || 30, 5), 300);
+const SOCK = path.join(os.homedir(), '.claude-deck', 'bridge.sock');
+const TTL  = Math.min(Math.max(Number(process.env.CLAUDE_DECK_TTL) || 30, 5), 300);
 
 /* Keine Ausgabe = keine Entscheidung = Terminal fragt. */
 function fallback() { process.exit(0); }

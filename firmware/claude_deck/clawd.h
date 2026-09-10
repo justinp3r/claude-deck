@@ -1,7 +1,7 @@
 /* Clawd - das Claude-Code-Maskottchen, animiert.
  *
  * Nicht als Bitmap, sondern aus Rechtecken gebaut. Die Vorlage
- * (SquareLineStudioExport/images/ui_img_clawd_png.c) ist Pixel-Art aus genau
+ * (reference/squareline-draft/images/ui_img_clawd_png.c) ist Pixel-Art aus genau
  * neun Rechtecken - als Bild waeren es 161 KB, die sich nur als Ganzes bewegen
  * liessen. So kostet es nichts und jedes Bein laeuft einzeln.
  */

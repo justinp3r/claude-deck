@@ -2,7 +2,7 @@
 """Erzeugt die Panel-Bilder fuer die README.
 
 Kein Foto und kein Mockup: Koordinaten, Groessen und Farben sind direkt aus
-firmware/claude_dashboard/ui_theme.h und ui_panel.c uebernommen, Clawd aus
+firmware/claude_deck/ui_theme.h und ui_panel.c uebernommen, Clawd aus
 clawd.c. Aendert sich die UI, gehoert dieses Skript mit angepasst und neu
 ausgefuehrt:  python3 docs/render-panels.py
 """

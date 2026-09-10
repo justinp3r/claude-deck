@@ -1,4 +1,4 @@
-/* Alle fuenf Zustaende des Freigabepanels, siehe agent-panel-design.html.
+/* Alle fuenf Zustaende des Freigabepanels, siehe CLAUDE.md, Abschnitt Design.
  *
  * Saemtliche Texte auf dem Display sind Englisch, die Kommentare Deutsch.
  *
@@ -141,7 +141,7 @@ static void build_tile(lv_obj_t *parent, int x, int w, request_view_t *v)
     lv_obj_t *clawd = clawd_create(tile, cw);
     lv_obj_align(clawd, LV_ALIGN_TOP_MID, 0, 20);
 
-    /* Sessionnamen sind oft lang ("claude-dashboard"). Ohne feste Breite
+    /* Sessionnamen sind oft lang ("claude-deck"). Ohne feste Breite
      * waechst das Label mit LV_SIZE_CONTENT ueber den Kachelrand hinaus. */
     v->agent = label(tile, "backend", &ui_font_mono_18, 0xB7BAB6);
     lv_obj_set_width(v->agent, w - 16);

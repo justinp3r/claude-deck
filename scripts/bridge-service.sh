@@ -9,14 +9,14 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 REPO="$(pwd)"
-LABEL="com.claude-dashboard.bridge"
+LABEL="com.claude-deck.bridge"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
-LOG="$HOME/.claude-dashboard/bridge.log"
+LOG="$HOME/.claude-deck/bridge.log"
 NODE="$(command -v node)"
 
 case "${1:-status}" in
   install)
-    mkdir -p "$HOME/Library/LaunchAgents" "$HOME/.claude-dashboard"
+    mkdir -p "$HOME/Library/LaunchAgents" "$HOME/.claude-deck"
     cat > "$PLIST" <<PLIST_EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -50,7 +50,7 @@ PLIST_EOF
     else
       echo "Dienst laeuft nicht."
     fi
-    [ -S "$HOME/.claude-dashboard/bridge.sock" ] && echo "Socket da." || echo "Kein Socket."
+    [ -S "$HOME/.claude-deck/bridge.sock" ] && echo "Socket da." || echo "Kein Socket."
     ;;
   log) tail -f "$LOG" ;;
   *) echo "install | uninstall | status | log"; exit 1 ;;

@@ -1,4 +1,4 @@
-# claude-dashboard
+# claude-deck
 
 Ein physisches Freigabe-Panel für Claude Code: ein ESP32-S3 mit Breitbild-Touch-LCD
 steht neben der Tastatur und beantwortet genau eine Frage — *darf dieser Agent das jetzt tun?*
@@ -192,8 +192,8 @@ bridge/
   statusline.sh          Vorschalter, holt die Limits aus der Statusline
   settings-patch.mjs     traegt Hook und Statusline ein/aus, mit Sicherung
   selftest.mjs           prueft Accept, Deny und Zeitablauf durch die ganze Kette
-firmware/claude_dashboard/
-  claude_dashboard.ino   leer, siehe oben
+firmware/claude_deck/
+  claude_deck.ino        leer, siehe oben
   main.cpp               setup()/loop(), Demo-Zyklus, Serial-Kommandos
   protocol.cpp/.h        Zeilenprotokoll zur Bridge (ArduinoJson)
   clawd.c/.h             das animierte Maskottchen aus Rechtecken
@@ -206,15 +206,25 @@ firmware/claude_dashboard/
 lv_conf.h                LVGL-Konfiguration, wird nach ~/Documents/Arduino/libraries/ kopiert
 scripts/                 install.sh (Einrichtung), setup.sh (Toolchain),
                          flash.sh, bridge-service.sh, common.sh (FQBN)
-docs/vendor/             Referenz-Sketch von Waveshare
-SquareLineStudioExport/  erster SquareLine-Entwurf, nur noch Referenz
-agent-panel-design.html  Design-Referenz
+docs/
+  img/                   die Panel-Bilder aus der README
+  render-panels.py       zeichnet sie aus den Firmware-Werten
+reference/
+  squareline-draft/      erster Entwurf aus SquareLine Studio; daraus stammt
+                         die Vorlage, aus der Clawds Geometrie vermessen wurde
+  waveshare-v2-example.ino.txt   Referenz-Sketch des Herstellers
 ```
+
+`reference/` ist Ausgangsmaterial, kein Teil des Builds — nichts darin wird
+uebersetzt oder eingebunden.
 
 ## Design
 
-`agent-panel-design.html` ist die Referenz — die Zustände als SVG bei exakt
-640 × 172 px, mit der Maßrechnung dazu (194 ppi, 7,62 px/mm).
+Grundlage war ein Entwurf, der die Zustände als SVG bei exakt 640 × 172 px
+durchspielte, mit der Maßrechnung dazu (194 ppi, 7,62 px/mm). Die Datei
+`agent-panel-design.html` ist aus dem Repo entfernt; sie steckt in der
+Git-Historie vor `525acb8`. Was davon gilt, steht unten in diesem Abschnitt,
+und wie es aussieht, zeigen die Bilder in `docs/img/`.
 
 Gebaut sind sechs: `idle` · `approval` · `queue` · `detail` · `usage` · `disconnected`.
 
@@ -292,7 +302,7 @@ das Einzige, was einen Fehlgriff verhindert.
 ### Clawd
 
 Das Maskottchen in der Kachel ist **nicht** das Bitmap aus dem SquareLine-Export
-(400 × 400, I8, 161 KB), sondern in [clawd.c](firmware/claude_dashboard/clawd.c)
+(400 × 400, I8, 161 KB), sondern in [clawd.c](firmware/claude_deck/clawd.c)
 aus neun Rechtecken nachgebaut. Die Vorlage ist Pixel-Art und lässt sich exakt
 vermessen — als Bild könnte sich nur der ganze Kerl bewegen, so läuft jedes Bein
 einzeln. Kostet nichts an Flash.

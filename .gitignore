@@ -8,5 +8,5 @@ build/
 # macOS
 .DS_Store
 
-# Laufzeitdaten der Bridge liegen ausserhalb des Repos (~/.claude-dashboard/),
+# Laufzeitdaten der Bridge liegen ausserhalb des Repos (~/.claude-deck/),
 # hier steht nichts davon.

@@ -7,7 +7,7 @@ have a board straight out of the box.
 ## Short version
 
 ```bash
-cd ~/Dev/claude-dashboard
+cd ~/Dev/claude-deck
 ./scripts/flash.sh
 ```
 
@@ -24,8 +24,8 @@ Homebrew has to provide):
 
 ```bash
 brew install arduino-cli node
-git clone <this-repo> claude-dashboard
-cd claude-dashboard
+git clone <this-repo> claude-deck
+cd claude-deck
 ./scripts/setup.sh
 ```
 
@@ -128,7 +128,7 @@ swipe gestures.
 Then the board revision is wrong. This project is set up for **V2** (PCB silkscreen
 `Rev1.1`, QC sticker `V2`). On V1, the backlight and LCD reset are on different
 pins — see the comment header in
-[user_config.h](firmware/claude_dashboard/user_config.h).
+[user_config.h](firmware/claude_deck/user_config.h).
 
 **Boot loop, the monitor says `PSRAM chip is not connected`.**
 Then the PSRAM setting is on QSPI instead of octal. In
@@ -145,7 +145,7 @@ Check the cable. It has to be a data cable, not a charge-only one.
 
 **Touches do not arrive, or the device decides on its own.**
 Should not happen any more, but if it does: the touch handling sits in
-`TouchInputReadCallback` in [lvgl_port.c](firmware/claude_dashboard/lvgl_port.c).
+`TouchInputReadCallback` in [lvgl_port.c](firmware/claude_deck/lvgl_port.c).
 Three safeguards with their reasoning are documented there — correct I²C bus, dead
 zone against jitter, confirmation across two readings. To measure, compile with
 `--build-property compiler.c.extra_flags=-DTOUCH_DEBUG=1`; the device then reports
@@ -158,9 +158,9 @@ then `./scripts/flash.sh`.
 ## The Arduino IDE
 
 You do not need it — the scripts do everything. If you want to open it anyway: the
-sketch is `firmware/claude_dashboard`, and under *Tools* these have to be set:
+sketch is `firmware/claude_deck`, and under *Tools* these have to be set:
 board `ESP32S3 Dev Module`, **PSRAM: OPI PSRAM**, flash size `16MB`, partition
 `3MB APP/9.9MB FATFS`, **USB CDC On Boot: Enabled**.
 
 The code deliberately lives in `main.cpp`, not in the `.ino` — the reasoning is in
-the file header of [main.cpp](firmware/claude_dashboard/main.cpp).
+the file header of [main.cpp](firmware/claude_deck/main.cpp).

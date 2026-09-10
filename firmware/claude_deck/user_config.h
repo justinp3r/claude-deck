@@ -73,7 +73,7 @@
 #define USER_DISP_ROT_90    1
 #define USER_DISP_ROT_NONO  0
 // 640 x 172 quer. Das Panel ist nativ 172 x 640 hochkant, LVGL dreht per Software
-// um 270 Grad. Das gesamte Design in agent-panel-design.html geht von 640 x 172 aus,
+// um 270 Grad. Das gesamte Design geht von 640 x 172 aus,
 // dieser Wert darf also nicht auf USER_DISP_ROT_NONO zurueck.
 #define Rotated USER_DISP_ROT_90
 

@@ -1,4 +1,5 @@
-/* Design-Tokens aus agent-panel-design.html.
+/* Design-Tokens aus dem urspruenglichen Entwurf (siehe CLAUDE.md, Abschnitt
+ * Design; die Entwurfsdatei selbst liegt nur noch in der Git-Historie).
  *
  * Das Panel ist 640 x 172 px auf 84,0 x 22,6 mm, also 7,62 px/mm.
  * Daraus folgt die Regel, die alles andere bestimmt: alles Antippbare

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Richtet claude-dashboard auf diesem Mac ein.
+# Richtet claude-deck auf diesem Mac ein.
 #
 #   ./scripts/install.sh              einrichten
 #   ./scripts/install.sh --uninstall  rueckgaengig machen
@@ -22,7 +22,7 @@ if [ "${1:-}" = "--uninstall" ] || [ "${1:-}" = "--purge" ]; then
   say "2/2  Einstellungen zuruecksetzen"
   node bridge/settings-patch.mjs uninstall
 
-  RUN="$HOME/.claude-dashboard"
+  RUN="$HOME/.claude-deck"
   if [ "${1:-}" = "--purge" ]; then
     rm -rf "$RUN"
     say "Auch geloescht: $RUN"

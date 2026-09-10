@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Size: 26 px
  * Bpp: 4
- * Opts: --font IBMPlexSans-SemiBold.ttf -r 0x20-0x7E,0xB0,0xB7,0xC4,0xD6,0xDC,0xDF,0xE4,0xF6,0xFC,0x2212 --size 26 --bpp 4 --format lvgl --force-fast-kern-format --no-compress --lv-include lvgl.h -o /Users/mac/Dev/claude-dashboard/firmware/claude_dashboard/ui_font_sans_sb_26.c
+ * Opts: --font IBMPlexSans-SemiBold.ttf -r 0x20-0x7E,0xB0,0xB7,0xC4,0xD6,0xDC,0xDF,0xE4,0xF6,0xFC,0x2212 --size 26 --bpp 4 --format lvgl --force-fast-kern-format --no-compress --lv-include lvgl.h -o /Users/mac/Dev/claude-deck/firmware/claude_deck/ui_font_sans_sb_26.c
  ******************************************************************************/
 
 #ifdef LV_LVGL_H_INCLUDE_SIMPLE

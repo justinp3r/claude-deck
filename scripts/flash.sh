@@ -32,9 +32,9 @@ PORT="$(detect_port)" || { echo "Kein Board gefunden. USB-Kabel steckt?"; exit 1
 
 # Die Bridge haelt den seriellen Port. Vor dem Flashen anhalten, danach wieder
 # starten - sonst schlaegt der Upload mit "Resource busy" fehl.
-BRIDGE_PLIST="$HOME/Library/LaunchAgents/com.claude-dashboard.bridge.plist"
+BRIDGE_PLIST="$HOME/Library/LaunchAgents/com.claude-deck.bridge.plist"
 BRIDGE_WAS_UP=0
-if [ -f "$BRIDGE_PLIST" ] && launchctl list 2>/dev/null | grep -q com.claude-dashboard.bridge; then
+if [ -f "$BRIDGE_PLIST" ] && launchctl list 2>/dev/null | grep -q com.claude-deck.bridge; then
   echo "Bridge anhalten ..."
   launchctl unload "$BRIDGE_PLIST" 2>/dev/null || true
   BRIDGE_WAS_UP=1

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* claude-dashboard Bridge.
+/* claude-deck Bridge.
  *
  * Haelt den seriellen Port zum Geraet und einen Unix-Socket fuer die Hooks.
  * Warum ein Daemon dazwischen und nicht der Hook direkt am Port: den Port kann
@@ -17,7 +17,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const HOME      = os.homedir();
-const RUN_DIR   = path.join(HOME, '.claude-dashboard');
+const RUN_DIR   = path.join(HOME, '.claude-deck');
 const SOCK      = path.join(RUN_DIR, 'bridge.sock');
 const BAUD      = '115200';
 const PING_MS   = 4000;
@@ -30,9 +30,9 @@ const log = (...a) => console.error(new Date().toISOString().slice(11, 19), ...a
 /* ------------------------------------------------------------------ */
 
 function findPort() {
-  /* Uebersteuerung zum Testen: CLAUDE_DASHBOARD_PORT=/dev/null-ish simuliert
+  /* Uebersteuerung zum Testen: CLAUDE_DECK_PORT=/dev/null-ish simuliert
    * ein gezogenes Kabel, ohne dass jemand daran ziehen muss. */
-  const forced = process.env.CLAUDE_DASHBOARD_PORT;
+  const forced = process.env.CLAUDE_DECK_PORT;
   if (forced) return fs.existsSync(forced) ? forced : null;
   const dev = fs.readdirSync('/dev');
   const hit = dev.find(n => n.startsWith('cu.usbmodem'))

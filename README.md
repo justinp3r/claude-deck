@@ -126,15 +126,13 @@ Two settings are not optional, or the device will not boot: `PSRAM=opi` (not
 ## Layout
 
 ```
-firmware/claude_dashboard/   Arduino sketch: LVGL, UI, protocol
-bridge/                      Node daemon, hook glue, self-test
-.claude/                     hook registration for this project
-scripts/                     install.sh, setup.sh, flash.sh, bridge-service.sh
-lv_conf.h                    LVGL configuration
-agent-panel-design.html      design reference: six states as SVG
-SquareLineStudioExport/      first draft from SquareLine Studio, reference only
-docs/vendor/                 reference sketch from Waveshare
-docs/img/, docs/render-panels.py   the panel images in this README
+firmware/claude_deck/     Arduino sketch: LVGL, UI, protocol
+bridge/                   Node daemon, hook glue, self-test
+.claude/                  hook registration for this project
+scripts/                  install.sh, setup.sh, flash.sh, bridge-service.sh
+lv_conf.h                 LVGL configuration
+docs/                     the panel images and the script that draws them
+reference/                material this was built from, not part of the build
 ```
 
 Neither the bridge nor the hook has npm dependencies.

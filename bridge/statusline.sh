@@ -12,12 +12,12 @@
 set -uo pipefail
 
 input=$(cat)
-SOCK="$HOME/.claude-dashboard/bridge.sock"
+SOCK="$HOME/.claude-deck/bridge.sock"
 
 # Die urspruenglich eingetragene Statusline. settings-patch.mjs legt sie hier
 # ab, bevor es sich davorschaltet - so laeuft sie unveraendert weiter und die
 # Deinstallation kann sie zurueckschreiben.
-ORIG_FILE="$HOME/.claude-dashboard/original-statusline"
+ORIG_FILE="$HOME/.claude-deck/original-statusline"
 
 # Weiterreichen, im Hintergrund, Fehler egal - die Statusline darf daran
 # niemals haengen bleiben.

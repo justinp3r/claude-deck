@@ -36,8 +36,8 @@ what `./scripts/setup.sh` takes care of.
 ## Setting up on a new Mac
 
 ```bash
-git clone <this-repo> claude-dashboard
-cd claude-dashboard
+git clone <this-repo> claude-deck
+cd claude-deck
 ./scripts/install.sh
 ```
 
@@ -76,13 +76,13 @@ that could get stuck in the background.
 
 ```bash
 ./scripts/install.sh --uninstall   # service gone, hook removed, statusline restored
-./scripts/install.sh --purge       # also delete ~/.claude-dashboard/
+./scripts/install.sh --purge       # also delete ~/.claude-deck/
 ```
 
 Verified after `--uninstall`: no process, LaunchAgent unloaded and plist deleted,
 socket gone, hook removed, statusline reset to exactly the previous command. All
 that stays behind is `bridge.log` and the remembered original statusline in
-`~/.claude-dashboard/` — data, nothing running. `--purge` clears those too.
+`~/.claude-deck/` — data, nothing running. `--purge` clears those too.
 
 Afterwards, restart Claude Code once.
 
@@ -181,7 +181,7 @@ not fire — which is correct.
 
 ## Security
 
-The socket lives at `~/.claude-dashboard/bridge.sock` with mode `0600`; only your
+The socket lives at `~/.claude-deck/bridge.sock` with mode `0600`; only your
 user can reach it.
 
 The self-test switch `ALLOW_REMOTE_TAP` in the firmware is **off** by default and

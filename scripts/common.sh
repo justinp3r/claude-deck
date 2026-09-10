@@ -1,6 +1,6 @@
 # Gemeinsame Werte fuer setup.sh und flash.sh.
 
-SKETCH_DIR="firmware/claude_dashboard"
+SKETCH_DIR="firmware/claude_deck"
 
 # Board-Optionen, die bei diesem Geraet nicht optional sind:
 #   PSRAM=opi       ESP32-S3R8 = 8 MB OCTAL-PSRAM. Mit "enabled" (= QSPI)

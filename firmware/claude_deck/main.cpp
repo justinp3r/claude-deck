@@ -1,4 +1,4 @@
-/* claude-dashboard - Firmware fuer ESP32-S3-Touch-LCD-3.49 V2.
+/* claude-deck - Firmware fuer ESP32-S3-Touch-LCD-3.49 V2.
  *
  * Warum hier und nicht in der .ino: Die .ino-Datei laeuft durch den
  * Arduino-Praeprozessor, der per ctags Funktionsprototypen einfuegt. Auf

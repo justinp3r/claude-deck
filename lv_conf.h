@@ -1,4 +1,4 @@
-/* lv_conf.h fuer claude-dashboard.
+/* lv_conf.h fuer claude-deck.
  *
  * Basis: getestete Konfiguration aus dem Waveshare-V2-Beispiel
  * (ESP32-S3-Touch-LCD-3.49-V2/Arduino/libraries/lvgl9/lv_conf.h),

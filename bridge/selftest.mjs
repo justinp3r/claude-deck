@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 
-const SOCK = path.join(os.homedir(), '.claude-dashboard', 'bridge.sock');
+const SOCK = path.join(os.homedir(), '.claude-deck', 'bridge.sock');
 const HOOK = new URL('../.claude/hooks/permission-request.mjs', import.meta.url).pathname;
 
 const payload = {
@@ -31,7 +31,7 @@ function tap(v) {
 
 function runHook(ttl) {
   return new Promise(res => {
-    const p = spawn('node', [HOOK], { env: { ...process.env, CLAUDE_DASHBOARD_TTL: String(ttl) } });
+    const p = spawn('node', [HOOK], { env: { ...process.env, CLAUDE_DECK_TTL: String(ttl) } });
     let out = '';
     p.stdout.on('data', d => out += d);
     p.on('close', code => res({ code, out }));

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Traegt claude-dashboard in ~/.claude/settings.json ein oder wieder aus.
+/* Traegt claude-deck in ~/.claude/settings.json ein oder wieder aus.
  *
  * Zwei Eingriffe:
  *   hooks.PermissionRequest  -> fragt das Geraet statt des Terminals
@@ -15,7 +15,7 @@ import path from 'node:path';
 const REPO     = path.resolve(new URL('..', import.meta.url).pathname);
 const HOME     = os.homedir();
 const SETTINGS = process.env.CD_SETTINGS || path.join(HOME, '.claude', 'settings.json');
-const RUN_DIR  = path.join(HOME, '.claude-dashboard');
+const RUN_DIR  = path.join(HOME, '.claude-deck');
 const ORIG_SL  = path.join(RUN_DIR, 'original-statusline');
 
 /* Ueber den bash-Wrapper, nicht direkt ueber node: Hooks starten ohne
@@ -43,7 +43,7 @@ if (fs.existsSync(SETTINGS)) {
   console.log(`Sicherung: ${bak}`);
 }
 
-const isOurs = c => typeof c === 'string' && c.includes('claude-dashboard');
+const isOurs = c => typeof c === 'string' && c.includes('claude-deck');
 
 if (mode === 'install') {
   /* --- Hook --- */
