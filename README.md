@@ -1,4 +1,4 @@
-# claude-dashboard
+# claude-deck
 
 A physical approval panel for Claude Code. An ESP32-S3 with a wide touch LCD sits
 next to the keyboard and answers exactly one question:
