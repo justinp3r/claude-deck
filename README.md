@@ -27,7 +27,7 @@ including every failure path.
 ## Getting started
 
 ```bash
-git clone <repo> claude-desk && cd claude-desk
+git clone <repo> claude-deck && cd claude-deck
 ./scripts/install.sh
 ```
 
