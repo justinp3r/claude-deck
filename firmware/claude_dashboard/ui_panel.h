@@ -85,7 +85,7 @@ void ui_panel_set_countdown(int seconds);
  * Nur die beiden kontoweiten Fenster. Der Kontextverbrauch gehoert einer
  * einzelnen Session und hat auf einer geraeteweiten Uebersicht nichts zu
  * suchen - bei mehreren Sessions sprang die Zahl zwischen ihnen hin und her. */
-void ui_panel_set_usage(bool have, const char *model,
+void ui_panel_set_usage(bool have,
                         int five_pct,  const char *five_reset,
                         int week_pct,  const char *week_reset);
 

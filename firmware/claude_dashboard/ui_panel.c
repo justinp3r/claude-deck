@@ -61,7 +61,7 @@ static char s_meta_base[64] = "a4f1";
 static int  s_countdown = 12;
 
 /* Usage-Ansicht */
-static lv_obj_t *s_usage_model, *s_usage_none, *s_usage_rows;
+static lv_obj_t *s_usage_clock, *s_usage_none, *s_usage_rows;
 static lv_obj_t *s_bar_fill[2], *s_bar_pct[2], *s_bar_reset[2];
 
 /* Gesten. Eine erkannte Geste darf nicht zusaetzlich als Klick durchgehen -
@@ -528,8 +528,11 @@ static void build_usage(lv_obj_t *root)
     lv_obj_t *hdr = label(root, "Usage", &ui_font_mono_16, UI_C_TEXT_HEADER);
     lv_obj_set_pos(hdr, UI_PAD_X, 14);
 
-    s_usage_model = label(root, "", &ui_font_mono_16, UI_C_TEXT_HEADER);
-    lv_obj_align(s_usage_model, LV_ALIGN_TOP_RIGHT, -UI_PAD_X, 14);
+    /* Oben rechts steht auf jedem Schirm dasselbe: die Uhrzeit. Gespeist wird
+     * sie aus dem Ruhezustand, den die Bridge mindestens einmal pro Minute
+     * schickt - auch waehrend die Verbrauchsanzeige offen ist. */
+    s_usage_clock = label(root, "", &ui_font_mono_16, UI_C_TEXT_HEADER);
+    lv_obj_align(s_usage_clock, LV_ALIGN_TOP_RIGHT, -UI_PAD_X, 14);
 
     lv_obj_t *rule = bare(root, UI_W - 2 * UI_PAD_X, 1);
     lv_obj_set_pos(rule, UI_PAD_X, 40);
@@ -713,6 +716,11 @@ void ui_panel_set_idle_header(const char *left, const char *right)
     if (right) {
         lv_label_set_text(s_idle_right, right);
         lv_obj_align(s_idle_right, LV_ALIGN_TOP_RIGHT, -UI_PAD_X, 14);
+        /* Dieselbe Uhr in der Verbrauchsanzeige. Die kommt nur mit dem
+         * Ruhezustand herein, und der laeuft weiter, waehrend usage offen
+         * ist - sonst stuende dort eine Uhrzeit von vor dem Aufschlagen. */
+        lv_label_set_text(s_usage_clock, right);
+        lv_obj_align(s_usage_clock, LV_ALIGN_TOP_RIGHT, -UI_PAD_X, 14);
     }
 }
 
@@ -799,13 +807,10 @@ void ui_panel_set_disconnected(const char *headline, const char *body, const cha
     if (meta)     lv_label_set_text(s_disc_meta, meta);
 }
 
-void ui_panel_set_usage(bool have, const char *model,
+void ui_panel_set_usage(bool have,
                         int five_pct,  const char *five_reset,
                         int week_pct,  const char *week_reset)
 {
-    if (model) lv_label_set_text(s_usage_model, model);
-    lv_obj_align(s_usage_model, LV_ALIGN_TOP_RIGHT, -UI_PAD_X, 14);
-
     if (!have) {
         lv_obj_remove_flag(s_usage_none, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(s_usage_rows, LV_OBJ_FLAG_HIDDEN);

@@ -87,7 +87,7 @@ static void apply_request(JsonDocument &d)
 
 static void apply_usage(JsonDocument &d)
 {
-    ui_panel_set_usage(d["have"] | false, d["model"] | "",
+    ui_panel_set_usage(d["have"] | false,
                        d["h5"]  | -1, d["h5r"] | "",
                        d["wk"]  | -1, d["wkr"] | "");
 }

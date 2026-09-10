@@ -102,7 +102,7 @@ def idle():
 # ------------------------------------------------------------------- usage
 def usage():
     p = [txt(20, 22, "Usage", 16, TEXT_HEADER),
-         txt(620, 22, "Opus 5", 16, TEXT_HEADER, anchor="end"),
+         txt(620, 22, "21:14", 16, TEXT_HEADER, anchor="end"),
          rect(20, 40, W - 40, 1, RULE)]
     for i, (name, pct, reset) in enumerate((("5-hour", 82, "2h 14m left"),
                                             ("Weekly", 38, "4d 6h left"))):

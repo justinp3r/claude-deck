@@ -221,7 +221,6 @@ function usagePayload() {
   return {
     t: 'usage',
     have: !!(five || week),
-    model: usage?.model?.display_name || '',
     h5:  five ? Math.round(five.used_percentage) : -1,
     h5r: five ? until(five.resets_at) : '',
     wk:  week ? Math.round(week.used_percentage) : -1,
