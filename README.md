@@ -1,143 +1,152 @@
 # claude-dashboard
 
-Ein physisches Freigabe-Panel für Claude Code. Ein ESP32-S3 mit Breitbild-Touch-LCD
-steht neben der Tastatur und beantwortet genau eine Frage:
+A physical approval panel for Claude Code. An ESP32-S3 with a wide touch LCD sits
+next to the keyboard and answers exactly one question:
 
-> **Darf dieser Agent das jetzt tun?**
+> **Is this agent allowed to do that, right now?**
 
-Statt jede Rückfrage im Terminal wegzuklicken, landet sie auf dem Gerät. Ein Tipp
-auf **Accept** oder **Deny** entscheidet, was Claude Code als Nächstes tut.
+Instead of dismissing every prompt in the terminal, it shows up on the device. One
+tap on **Accept** or **Deny** decides what Claude Code does next.
 
 ```
 ┌──────────┬────────────────────────────┬─────────────┐
-│          │ ● Approval requested       │   Accept    │  ← gefüllt, schwarze Schrift
+│          │ ● Approval requested       │   Accept    │  ← filled, black text
 │  Clawd   │ [Bash]                     ├─────────────┤
-│          │ git push origin            │    Deny     │  ← umrissen, weiße Schrift
+│          │ git push origin            │    Deny     │  ← outlined, white text
 │ backend  │ main --force               │             │
 └──────────┴────────────────────────────┴─────────────┘
-   640 × 172 px · 84 × 22,6 mm · beide Tasten 22 × 8,7 mm
+   640 × 172 px · 84 × 22.6 mm · both buttons 22 × 8.7 mm
 ```
 
-## Stand
+## Status
 
-Läuft. Die Kette Claude Code → Hook → Bridge → Gerät → Entscheidung ist
-nachgewiesen, inklusive aller Ausfallpfade.
+Working. The chain Claude Code → hook → bridge → device → decision is proven,
+including every failure path.
 
-## Loslegen
+## Getting started
 
 ```bash
 git clone <repo> claude-dashboard && cd claude-dashboard
 ./scripts/install.sh
 ```
 
-Danach Claude Code einmal neu starten. Mehr ist es nicht — vorausgesetzt, die
-Firmware ist schon auf dem Gerät und Node ist installiert.
+Then restart Claude Code once. That is all — assuming the firmware is already on
+the device and Node is installed.
 
-Rückgängig: `./scripts/install.sh --uninstall`
+To undo: `./scripts/install.sh --uninstall`
 
-**Firmware neu bauen** (nur nötig, wenn du am Gerät etwas änderst):
+**Firmware on a brand-new board**, or after you change something on the device:
 
 ```bash
-./scripts/setup.sh     # einmalig: arduino-cli, ESP32-Core, LVGL, Fonts
-./scripts/flash.sh     # übersetzen und flashen
+brew install arduino-cli            # once per machine
+./scripts/setup.sh                  # ESP32 core, LVGL, ArduinoJson, lv_conf.h, ctags
+./scripts/flash.sh                  # compile and flash
 ```
 
-## Wie es zusammenhängt
+A board out of the box needs nothing erased and no button held — `flash.sh` writes
+the bootloader, partition table and app over the factory demo in one go. The whole
+sequence, including what to check when the port does not show up, is in
+[FLASHING.md](FLASHING.md).
+
+## How it fits together
 
 ```
 Claude Code                 Bridge (Node)              ESP32-S3
     │                            │                        │
-    │ PermissionRequest-Hook     │                        │
+    │ PermissionRequest hook     │                        │
     ├───────────────────────────►│  USB-C                 │
-    │  (Unix-Socket)             ├───────────────────────►│  zeigt die Anfrage
+    │  (Unix socket)             ├───────────────────────►│  shows the request
     │                            │                        │
     │◄───────────────────────────┤◄───────────────────────┤  Accept / Deny
     │  allow / deny              │                        │
 ```
 
-Der Daemon sitzt dazwischen, weil den seriellen Port immer nur ein Prozess offen
-haben kann — und typischerweise laufen mehrere Claude-Code-Sessions. Er kennt
-dadurch auch die Warteschlange.
+The daemon sits in between because only one process can hold the serial port open
+— and typically several Claude Code sessions are running. That is also how it
+knows the queue.
 
-**Es ist USB-C, kein Bluetooth.** Dasselbe Kabel, das das Gerät mit Strom
-versorgt, ist die Datenverbindung. Das Gerät hat **kein Claude-Konto** und
-spricht nie mit Anthropic — es zeigt an, was die Bridge schickt, und schickt
-`allow`/`deny` zurück. Keine Zugangsdaten darauf, nichts übers Netz.
+**It is USB-C, not Bluetooth.** The same cable that powers the device is the data
+link. The device has **no Claude account** and never talks to Anthropic — it
+displays what the bridge sends and sends `allow`/`deny` back. No credentials on
+it, nothing over the network.
 
-## Die Regel, an der alles hängt
+## The rule everything hangs on
 
-**Jeder Ausfallpfad gibt die Frage ans Terminal zurück.** Kabel gezogen, Bridge
-tot, Zeit abgelaufen, kaputtes JSON: der Hook liefert keine Entscheidung, und der
-normale Dialog erscheint wie vorher. Gemessen:
+**Every failure path hands the question back to the terminal.** Cable unplugged,
+bridge dead, timeout, broken JSON: the hook returns no decision, and the usual
+dialog appears just as before. Measured:
 
-| Fall | Dauer bis zum Terminal |
+| Case | Time until the terminal asks |
 |---|---|
-| Kabel gezogen | 0,06 s |
-| Bridge gestoppt | 0,06 s |
-| Gerät da, niemand tippt | 30 s (einstellbar) |
+| Cable unplugged | 0.06 s |
+| Bridge stopped | 0.06 s |
+| Device present, nobody taps | 30 s (configurable) |
 
-Es gibt keinen Pfad, auf dem ein stummes Gerät etwas freigibt. Auch nicht mit
-einem einzelnen gestörten Messwert — eine Berührung zählt erst, wenn zwei
-aufeinanderfolgende Messungen sie bestätigen.
+There is no path on which a silent device approves anything. Not even with a
+single noisy sample — a touch only counts once two consecutive readings confirm
+it.
 
-## Was das Gerät zeigt
+## What the device shows
 
-| Zustand | Inhalt |
+| State | Content |
 |---|---|
-| `idle` | laufende Sessions; ist nichts los, spaziert Clawd durchs Bild |
-| `approval` | Kachel, Befehl, Accept und Deny |
-| `queue` | wie oben, plus `1 of 2 waiting` und Positionsleiste |
-| `detail` | der ganze Befehl über die volle Breite |
-| `usage` | 5-Stunden-Fenster, Woche, Kontext als Balken |
-| `disconnected` | roter Steg, `Bridge unreachable` |
+| `idle` | running sessions; when nothing is going on, Clawd walks across the screen |
+| `approval` | tile, command, Accept and Deny |
+| `queue` | as above, plus `1 of 2 waiting` and a position bar |
+| `detail` | the whole command across the full width |
+| `usage` | 5-hour window and week as bars |
+| `disconnected` | red bar, `Bridge unreachable` |
 
-Bedient wird ohne sichtbare Schaltflächen — auf 22,6 mm Höhe ist jeder Knopf
-Platz, der dem Inhalt fehlt:
+The usage bars follow the thresholds at which Claude Code itself warns:
+blue below 75%, orange from 75%, red from 95%.
 
-| Geste | Wirkung |
+It is operated without visible controls — at 22.6 mm of height, every button is
+space taken away from the content:
+
+| Gesture | Effect |
 |---|---|
-| wischen ↓ | Verbrauchsanzeige (in `idle` erst durch die Sessionliste blättern) |
-| wischen ↑ | zurück |
-| wischen ← → | zwischen wartenden Anfragen blättern |
-| tippen auf die Kachel | Detailansicht, nochmal tippen geht zurück |
+| swipe ↓ | usage view (in `idle`, page back through the session list first) |
+| swipe ↑ | back |
+| swipe ← → | page through the waiting requests |
+| tap the tile | detail view; tap again to go back |
 
 ## Hardware
 
-**Waveshare ESP32-S3-Touch-LCD-3.49, Revision V2** — 3,49" IPS, 172 × 640 nativ
-(hier quer betrieben), AXS15231B über QSPI, Touch über I²C, 16 MB Flash, 8 MB
-Octal-PSRAM.
+**Waveshare ESP32-S3-Touch-LCD-3.49, revision V2** — 3.49" IPS, 172 × 640 native
+(driven in landscape here), AXS15231B over QSPI, touch over I²C, 16 MB flash, 8 MB
+octal PSRAM.
 
-Zwei Einstellungen sind nicht optional, sonst startet das Gerät nicht:
-`PSRAM=opi` (nicht `enabled`) und die **V2**-Pinbelegung. Warum, steht in
+Two settings are not optional, or the device will not boot: `PSRAM=opi` (not
+`enabled`) and the **V2** pinout. The reasons are in
 [CLAUDE.md](CLAUDE.md#hardware).
 
-## Aufbau
+## Layout
 
 ```
-firmware/claude_dashboard/   Arduino-Sketch: LVGL, UI, Protokoll
-bridge/                      Node-Daemon, Hook-Anbindung, Selbsttest
-.claude/                     Hook-Registrierung für dieses Projekt
+firmware/claude_dashboard/   Arduino sketch: LVGL, UI, protocol
+bridge/                      Node daemon, hook glue, self-test
+.claude/                     hook registration for this project
 scripts/                     install.sh, setup.sh, flash.sh, bridge-service.sh
-lv_conf.h                    LVGL-Konfiguration
-agent-panel-design.html      Design-Referenz: sechs Zustände als SVG
-SquareLineStudioExport/      erster Entwurf aus SquareLine Studio, nur Referenz
-docs/vendor/                 Referenz-Sketch von Waveshare
+lv_conf.h                    LVGL configuration
+agent-panel-design.html      design reference: six states as SVG
+SquareLineStudioExport/      first draft from SquareLine Studio, reference only
+docs/vendor/                 reference sketch from Waveshare
 ```
 
-Weder Bridge noch Hook haben npm-Abhängigkeiten.
+Neither the bridge nor the hook has npm dependencies.
 
-## Weiterlesen
+## Further reading
 
 | | |
 |---|---|
-| [VERBINDEN.md](VERBINDEN.md) | Einrichtung, zweiter Rechner, warum kein Bluetooth |
-| [FLASHEN.md](FLASHEN.md) | Firmware bauen, ausprobieren, Fehlerbilder |
-| [CLAUDE.md](CLAUDE.md) | Architektur, Design-Entscheidungen, alle Fallstricke |
+| [CONNECTING.md](CONNECTING.md) | setup, second machine, why not Bluetooth |
+| [FLASHING.md](FLASHING.md) | building the firmware, trying it out, failure modes |
+| [CLAUDE.md](CLAUDE.md) | architecture, design decisions, every pitfall |
 
-## Selbsttest
+## Self-test
 
 ```bash
-./scripts/flash.sh -t          # Firmware mit Testschalter
-node bridge/selftest.mjs       # Accept, Deny und Zeitablauf prüfen
-./scripts/flash.sh             # danach wieder ohne Schalter
+./scripts/flash.sh -t          # firmware with the test switch
+node bridge/selftest.mjs       # check Accept, Deny and timeout
+./scripts/flash.sh             # afterwards, without the switch again
 ```

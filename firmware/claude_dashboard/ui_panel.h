@@ -80,11 +80,14 @@ void ui_panel_set_countdown(int seconds);
 
 /* Verbrauchsanzeige. have=false zeigt an, dass noch keine Daten da sind.
  * Prozente 0..100, -1 heisst "dieses Fenster fehlt". Die Resetzeiten kommen
- * fertig formatiert von der Bridge ("2h 14m"), das spart Datumsrechnung hier. */
+ * fertig formatiert von der Bridge ("2h 14m"), das spart Datumsrechnung hier.
+ *
+ * Nur die beiden kontoweiten Fenster. Der Kontextverbrauch gehoert einer
+ * einzelnen Session und hat auf einer geraeteweiten Uebersicht nichts zu
+ * suchen - bei mehreren Sessions sprang die Zahl zwischen ihnen hin und her. */
 void ui_panel_set_usage(bool have, const char *model,
                         int five_pct,  const char *five_reset,
-                        int week_pct,  const char *week_reset,
-                        int ctx_pct);
+                        int week_pct,  const char *week_reset);
 
 /* Wischen nach links/rechts in der Warteschlange: die Bridge soll die
  * naechste bzw. vorige offene Anfrage nach vorn holen. */

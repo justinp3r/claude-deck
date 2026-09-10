@@ -216,16 +216,16 @@ function until(epoch) {
 function usagePayload() {
   const r = usage?.rate_limits;
   const five = r?.five_hour, week = r?.seven_day;
-  const ctx = usage?.context_window?.used_percentage;
+  /* Nur die kontoweiten Fenster. context_window gehoert einer einzelnen
+   * Session und wuerde auf einer geraeteweiten Uebersicht nur springen. */
   return {
     t: 'usage',
-    have: !!(five || week || ctx != null),
+    have: !!(five || week),
     model: usage?.model?.display_name || '',
     h5:  five ? Math.round(five.used_percentage) : -1,
     h5r: five ? until(five.resets_at) : '',
     wk:  week ? Math.round(week.used_percentage) : -1,
     wkr: week ? until(week.resets_at) : '',
-    ctx: ctx != null ? Math.round(ctx) : -1,
   };
 }
 
@@ -313,6 +313,26 @@ function onDeviceLine(msg) {
 /* Socket fuer die Hooks                                               */
 /* ------------------------------------------------------------------ */
 
+/* Eine gesehene Session merken. Quelle ist entweder ein Hook-Aufruf oder die
+ * Statusline - beide liefern dieselben Felder. */
+function noteSession(p) {
+  if (!p || !p.session_id) return;
+  const dir = p.cwd || p.workspace?.current_dir || '';
+  const name = p.session_name || path.basename(dir) || 'session';
+  if (!sessions.has(p.session_id)) log('Session gesehen:', name, `(${p.session_id.slice(-6)})`);
+  sessions.set(p.session_id, { name, last: Date.now() });
+  return name;
+}
+
+/* Ruhezustand senden, aber nur bei echter Aenderung. */
+function pushIdle() {
+  const p = idlePayload();
+  const sig = JSON.stringify(p);
+  if (sig === lastIdleSig) return;
+  lastIdleSig = sig;
+  dev.send(p);
+}
+
 function onHook(socket, req) {
   /* Testkanal fuer scripts/selftest.mjs: simuliert einen Tastendruck am Geraet.
    * Wirkt nur, wenn die Firmware mit ALLOW_REMOTE_TAP=1 gebaut ist - im
@@ -322,7 +342,17 @@ function onHook(socket, req) {
     usage = req.payload || null;
     const after = usage ? JSON.stringify(usage.rate_limits || {}) : '';
     if (after !== before) log('Limits:', after || '(keine rate_limits im Payload)');
-    if (dev.alive) dev.send(usagePayload());
+
+    /* Die Statusline laeuft in jeder aktiven Session, dauernd - und liefert
+     * session_id und cwd mit. Damit kennt die Bridge eine Session ab dem
+     * ersten Rendern, nicht erst bei der ersten Freigabeanfrage. Genau das
+     * macht die Ruheansicht ueberhaupt nuetzlich. */
+    noteSession(usage);
+
+    if (dev.alive) {
+      dev.send(usagePayload());
+      if (order.length === 0) pushIdle();
+    }
     socket.end();
     return;
   }
@@ -335,12 +365,7 @@ function onHook(socket, req) {
 
   const h = req.payload || {};
 
-  if (h.session_id) {
-    sessions.set(h.session_id, {
-      name: path.basename(h.cwd || 'session') || 'session',
-      last: Date.now(),
-    });
-  }
+  noteSession(h);
 
   /* Kein Geraet, keine Entscheidung: der Hook faellt auf das Terminal zurueck. */
   if (!dev.alive) {
@@ -421,11 +446,7 @@ setInterval(() => {
   }
   /* Nur senden, wenn sich wirklich etwas geaendert hat. Spart Funkverkehr und
    * vermeidet, dass das Geraet staendig neu gezeichnet wird. */
-  if (alive && order.length === 0) {
-    const p = idlePayload();
-    const sig = JSON.stringify(p);
-    if (sig !== lastIdleSig) { lastIdleSig = sig; dev.send(p); }
-  }
+  if (alive && order.length === 0) pushIdle();
 }, PING_MS);
 
 function shutdown() {

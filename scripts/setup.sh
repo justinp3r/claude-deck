@@ -18,10 +18,13 @@ arduino-cli config add board_manager.additional_urls \
 arduino-cli core update-index >/dev/null
 arduino-cli core install esp32:esp32 2>&1 | tail -1
 
-say "3/5  LVGL 9.3.0"
-# 9.3.0 ist die Version, gegen die der SquareLine-Export und das
+say "3/5  Bibliotheken"
+# LVGL 9.3.0 ist die Version, gegen die der SquareLine-Export und das
 # Waveshare-Beispiel gebaut sind. Neuere 9.x koennen abweichen.
 arduino-cli lib install lvgl@9.3.0 2>&1 | tail -1
+# ArduinoJson 7 fuer protocol.cpp. Version 7 ist Pflicht: dort heisst der Typ
+# JsonDocument ohne Groessenangabe, in 6 waere es StaticJsonDocument<N>.
+arduino-cli lib install ArduinoJson@7.4.3 2>&1 | tail -1
 
 say "4/5  lv_conf.h"
 # LVGL sucht die Datei als "../../lv_conf.h" relativ zu lvgl/src/,

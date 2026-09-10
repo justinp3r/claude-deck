@@ -62,7 +62,7 @@ static int  s_countdown = 12;
 
 /* Usage-Ansicht */
 static lv_obj_t *s_usage_model, *s_usage_none, *s_usage_rows;
-static lv_obj_t *s_bar_fill[3], *s_bar_pct[3], *s_bar_reset[3];
+static lv_obj_t *s_bar_fill[2], *s_bar_pct[2], *s_bar_reset[2];
 
 /* Gesten. Eine erkannte Geste darf nicht zusaetzlich als Klick durchgehen -
  * LVGL unterdrueckt den Klick von sich aus NICHT. Sonst wuerde ein Wisch, der
@@ -511,14 +511,16 @@ static void build_disconnected(lv_obj_t *root)
 
 #define BAR_X     112
 #define BAR_W     286
-#define BAR_H      10
+#define BAR_H      12
 #define PCT_R     452      /* rechte Kante der Prozentzahl */
+#define USAGE_ROWS 2       /* 5-Stunden-Fenster und Woche - beide kontoweit */
+#define ROW_STEP   44
 
 static uint32_t load_color(int pct)
 {
-    if (pct >= 90) return UI_C_RED_SOFT;
-    if (pct >= 70) return UI_C_AMBER;
-    return UI_C_GREEN;
+    if (pct >= UI_BAR_CRIT_PCT) return UI_C_BAR_CRIT;
+    if (pct >= UI_BAR_WARN_PCT) return UI_C_BAR_WARN;
+    return UI_C_BAR_OK;
 }
 
 static void build_usage(lv_obj_t *root)
@@ -541,12 +543,12 @@ static void build_usage(lv_obj_t *root)
     lv_obj_set_style_text_align(s_usage_none, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(s_usage_none, LV_ALIGN_CENTER, 0, 12);
 
-    s_usage_rows = bare(root, UI_W, UI_H - 52);
-    lv_obj_set_pos(s_usage_rows, 0, 52);
+    s_usage_rows = bare(root, UI_W, UI_H - 56);
+    lv_obj_set_pos(s_usage_rows, 0, 60);
 
-    static const char *names[3] = { "5-hour", "Weekly", "Context" };
-    for (int i = 0; i < 3; i++) {
-        int y = i * 36;
+    static const char *names[USAGE_ROWS] = { "5-hour", "Weekly" };
+    for (int i = 0; i < USAGE_ROWS; i++) {
+        int y = i * ROW_STEP;
 
         lv_obj_t *n = label(s_usage_rows, names[i], &ui_font_mono_16, UI_C_TEXT_DIM);
         lv_obj_set_pos(n, UI_PAD_X, y);
@@ -554,13 +556,13 @@ static void build_usage(lv_obj_t *root)
         lv_obj_t *track = bare(s_usage_rows, BAR_W, BAR_H);
         lv_obj_set_pos(track, BAR_X, y + 4);
         lv_obj_set_style_radius(track, BAR_H / 2, 0);
-        lv_obj_set_style_bg_color(track, lv_color_hex(UI_C_CHIP), 0);
+        lv_obj_set_style_bg_color(track, lv_color_hex(UI_C_BAR_TRACK), 0);
         lv_obj_set_style_bg_opa(track, LV_OPA_COVER, 0);
 
         s_bar_fill[i] = bare(track, 0, BAR_H);
         lv_obj_set_pos(s_bar_fill[i], 0, 0);
         lv_obj_set_style_radius(s_bar_fill[i], BAR_H / 2, 0);
-        lv_obj_set_style_bg_color(s_bar_fill[i], lv_color_hex(UI_C_GREEN), 0);
+        lv_obj_set_style_bg_color(s_bar_fill[i], lv_color_hex(UI_C_BAR_OK), 0);
         lv_obj_set_style_bg_opa(s_bar_fill[i], LV_OPA_COVER, 0);
 
         s_bar_pct[i] = label(s_usage_rows, "\xE2\x80\x94", &ui_font_mono_18, UI_C_TEXT);
@@ -796,8 +798,7 @@ void ui_panel_set_disconnected(const char *headline, const char *body, const cha
 
 void ui_panel_set_usage(bool have, const char *model,
                         int five_pct,  const char *five_reset,
-                        int week_pct,  const char *week_reset,
-                        int ctx_pct)
+                        int week_pct,  const char *week_reset)
 {
     if (model) lv_label_set_text(s_usage_model, model);
     lv_obj_align(s_usage_model, LV_ALIGN_TOP_RIGHT, -UI_PAD_X, 14);
@@ -810,10 +811,10 @@ void ui_panel_set_usage(bool have, const char *model,
     lv_obj_add_flag(s_usage_none, LV_OBJ_FLAG_HIDDEN);
     lv_obj_remove_flag(s_usage_rows, LV_OBJ_FLAG_HIDDEN);
 
-    const int   pct[3]   = { five_pct,   week_pct,   ctx_pct };
-    const char *reset[3] = { five_reset, week_reset, "" };
+    const int   pct[USAGE_ROWS]   = { five_pct,   week_pct   };
+    const char *reset[USAGE_ROWS] = { five_reset, week_reset };
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < USAGE_ROWS; i++) {
         char buf[16];
         if (pct[i] < 0) {
             /* Fenster fehlt - lieber ein Strich als eine erfundene Null. */

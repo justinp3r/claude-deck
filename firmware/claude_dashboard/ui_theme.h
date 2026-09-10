@@ -39,6 +39,17 @@
 #define UI_C_ACCEPT_FG      0x000000  /* Schrift auf der gefuellten Taste */
 #define UI_C_DENY_FG        0xFFFFFF  /* Schrift auf der umrissenen Taste */
 
+/* Verbrauchsbalken. Schwellen aus der Claude-Code-Doku (Nutzungswarnungen):
+ * gewarnt wird ab 75 % und erneut ab 95 % der Auslastung. Darunter blau wie in
+ * der Weboberflaeche, darueber die beiden Warnstufen.
+ * Blau und Rot stammen aus der Farbpalette im Claude-Code-Bundle. */
+#define UI_C_BAR_OK         0x2563EB  /* < 75 %  */
+#define UI_C_BAR_WARN       0xF59E0B  /* >= 75 % */
+#define UI_C_BAR_CRIT       0xDC2626  /* >= 95 % */
+#define UI_C_BAR_TRACK      0x152A4E  /* unausgefuellter Teil, dunkles Marineblau */
+#define UI_BAR_WARN_PCT     75
+#define UI_BAR_CRIT_PCT     95
+
 #define UI_C_GREEN          0x1D9E75  /* laeuft - Punkt im Ruhezustand */
 #define UI_C_AMBER          0xEF9F27  /* wartet */
 #define UI_C_RED_BAR        0xA32D2D  /* Steg im Getrennt-Zustand */

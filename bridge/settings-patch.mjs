@@ -18,7 +18,10 @@ const SETTINGS = process.env.CD_SETTINGS || path.join(HOME, '.claude', 'settings
 const RUN_DIR  = path.join(HOME, '.claude-dashboard');
 const ORIG_SL  = path.join(RUN_DIR, 'original-statusline');
 
-const HOOK_CMD = `node ${path.join(REPO, '.claude', 'hooks', 'permission-request.mjs')}`;
+/* Ueber den bash-Wrapper, nicht direkt ueber node: Hooks starten ohne
+ * Shell-Profil, und bei einer nvm-Installation liegt node an einem Pfad, den
+ * nur das Profil kennt. Der Wrapper sucht ihn robust. */
+const HOOK_CMD = `bash ${path.join(REPO, '.claude', 'hooks', 'permission-request.sh')}`;
 const SL_CMD   = `bash ${path.join(REPO, 'bridge', 'statusline.sh')}`;
 
 const mode = process.argv[2];
@@ -46,9 +49,18 @@ if (mode === 'install') {
   /* --- Hook --- */
   cfg.hooks ??= {};
   const list = cfg.hooks.PermissionRequest ?? [];
-  const already = list.some(g => (g.hooks ?? []).some(h => isOurs(h.command)));
-  if (already) {
-    console.log('Hook: war schon eingetragen');
+  /* Einen vorhandenen eigenen Eintrag aktualisieren statt ihn zu ueberspringen -
+   * sonst bleibt nach einem Update der alte Aufrufweg stehen. */
+  let updated = false;
+  for (const g of list) {
+    for (const h of g.hooks ?? []) {
+      if (isOurs(h.command) && h.command !== HOOK_CMD) { h.command = HOOK_CMD; updated = true; }
+      else if (isOurs(h.command)) { updated = true; }
+    }
+  }
+  if (updated) {
+    cfg.hooks.PermissionRequest = list;
+    console.log('Hook: aktualisiert');
   } else {
     list.push({ hooks: [{ type: 'command', command: HOOK_CMD, timeout: 60,
                           statusMessage: 'Fragt das Panel' }] });

@@ -16,12 +16,35 @@ cd "$(dirname "$0")/.."
 
 say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 
-if [ "${1:-}" = "--uninstall" ]; then
+if [ "${1:-}" = "--uninstall" ] || [ "${1:-}" = "--purge" ]; then
   say "1/2  Dienst entfernen"
   ./scripts/bridge-service.sh uninstall
   say "2/2  Einstellungen zuruecksetzen"
   node bridge/settings-patch.mjs uninstall
-  say "Fertig. Claude Code einmal neu starten."
+
+  RUN="$HOME/.claude-dashboard"
+  if [ "${1:-}" = "--purge" ]; then
+    rm -rf "$RUN"
+    say "Auch geloescht: $RUN"
+  fi
+
+  say "Fertig."
+  cat <<TXT
+Es laeuft jetzt nichts mehr: kein Dienst, kein Socket, kein Hook. Hook und
+Statusline sind reine Aufruf-Skripte - die starten nur, wenn Claude Code sie
+ruft, und beenden sich sofort. Es gab nie einen zweiten Dauerprozess.
+
+Claude Code einmal neu starten, damit die Einstellungen neu gelesen werden.
+TXT
+  if [ -d "$RUN" ]; then
+    cat <<TXT
+
+Liegen geblieben (Daten, nichts Laufendes):
+$(ls "$RUN" | sed 's|^|  |')
+  in $RUN
+Mitloeschen: ./scripts/install.sh --purge
+TXT
+  fi
   exit 0
 fi
 

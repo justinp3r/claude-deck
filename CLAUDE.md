@@ -12,7 +12,7 @@ Die Kette steht: Claude Code → Hook → Bridge → Gerät → Entscheidung zur
 Nachgewiesen mit `bridge/selftest.mjs` (Accept, Deny, Zeitablauf).
 Die Demo auf dem Gerät läuft nur noch, solange sich die Bridge nicht gemeldet hat.
 
-Einrichten und verbinden: [VERBINDEN.md](VERBINDEN.md).
+Einrichten und verbinden: [CONNECTING.md](CONNECTING.md).
 
 **Sprache:** Alle Texte auf dem Display sind Englisch. Kommentare im Code und
 diese Dokumentation sind Deutsch.
@@ -24,7 +24,7 @@ diese Dokumentation sind Deutsch.
 ./scripts/flash.sh     # übersetzen + flashen   (-m Monitor, -c nur übersetzen)
 ```
 
-Details und Fehlerbilder: [FLASHEN.md](FLASHEN.md).
+Details und Fehlerbilder: [FLASHING.md](FLASHING.md).
 
 ## Hardware
 
@@ -313,6 +313,35 @@ offen ist. Eine echte Freigabeanfrage darf weiterhin dazwischenfunken; die ist
 dringend. Die Bridge sendet den Ruhezustand zusätzlich nur noch bei echter
 Änderung.
 
+### Woher die Sessionliste kommt
+
+Nicht aus den Freigabeanfragen — dann stünde dort nichts, bis zum ersten Mal
+gefragt wird. Stattdessen aus derselben Statusline, die auch die Limits liefert:
+sie läuft in **jeder** aktiven Session und bringt `session_id` und `cwd` mit.
+`noteSession()` in `bridge.mjs` wertet beide Quellen aus, Hook wie Statusline.
+
+Claude Code rendert die Statusline **ereignisgesteuert**, nicht im festen Takt —
+eine Session erscheint also, sobald sie etwas tut, und eine frisch gestartete
+sofort. Eine Session, die minutenlang nur nachdenkt, altert in der Anzeige.
+
+### Hooks starten ohne dein Shell-Profil
+
+`node` steht bei einer nvm-Installation unter
+`~/.nvm/versions/node/<version>/bin` — ein Pfad, den ausschließlich das
+Shell-Profil in die `PATH` bringt. Ein Hook, der als `node …` eingetragen ist,
+kann deshalb mit `env: node: No such file or directory` (Exit 127) enden.
+Claude Code wertet das als nicht-blockierenden Hook-Fehler und fragt im
+Terminal — das Gerät bleibt still, ohne sichtbaren Grund.
+
+Deshalb ist als Hook ein bash-Wrapper eingetragen, der über
+[scripts/find-node.sh](scripts/find-node.sh) sucht: `PATH`, Homebrew,
+`/usr/local`, dann die neueste nvm-Version. Findet er nichts, endet er mit
+Exit 0 und ohne Ausgabe — also Fallback ins Terminal, wie jeder andere
+Ausfallpfad auch.
+
+Dieselbe Falle trifft den LaunchAgent der Bridge; dort steht der aufgelöste
+Pfad fest im plist und wird beim Einrichten neu geschrieben.
+
 ### Verbrauchsanzeige
 
 `rate_limits.five_hour` und `.seven_day` liefert Claude Code **ausschließlich an
@@ -324,6 +353,32 @@ Node-Prozess pro Render, die Statusline darf nicht langsamer werden.
 Die Felder fehlen, solange keine Pro-/Max-Anmeldung vorliegt oder noch keine
 Antwort in der Session kam; jedes Fenster kann einzeln fehlen. Der Screen zeigt
 dann einen Strich statt einer erfundenen Null.
+
+**Nur die beiden kontoweiten Fenster.** Es gab einmal einen dritten Balken für
+den Kontextverbrauch — wieder entfernt: `context_window` gehört **einer**
+Session, während die Bridge nur ein `usage`-Objekt hält, das die zuletzt
+rendernde Session überschreibt. Bei mehreren Sessions sprang die Zahl also
+zwischen ihnen hin und her. Auf einer geräteweiten Übersicht hat eine
+Session-Größe nichts zu suchen.
+
+### Farben und Schwellen der Balken
+
+Die Schwellen sind **dokumentiert**, nicht geraten. Aus
+[claude-apps-gateway-spend-limits](https://code.claude.com/docs/en/claude-apps-gateway-spend-limits#usage-warnings-in-claude-code):
+
+> Claude Code warns a developer as they approach their cap: once utilization
+> passes 75%, and again past 95% of their most-consumed cap.
+
+| Auslastung | Farbe | |
+|---|---|---|
+| < 75 % | `#2563EB` | Blau wie in der Weboberfläche |
+| ≥ 75 % | `#F59E0B` | erste Warnstufe |
+| ≥ 95 % | `#DC2626` | zweite Warnstufe |
+
+Spur: `#152A4E`. Blau und Rot stammen aus der Farbpalette im Claude-Code-Bundle
+(`strings` über das Binary), das Orange ist der passende Wert derselben Skala.
+Der genaue Blauton der Weboberfläche ließ sich nicht pixelgenau abgreifen — wer
+ihn hat, ändert `UI_C_BAR_OK` in `ui_theme.h`.
 
 ### Schriften
 
@@ -354,10 +409,6 @@ Alle Textlabels, die Fremddaten anzeigen, haben feste Breite und
 sonst unter die Tasten laufen. Die volle Zeile zeigt die Detailansicht.
 
 ## Offene Punkte
-
-- Der Ruhezustand zeigt Sessions, die die Bridge aus den Hook-Aufrufen kennt.
-  Zwischen zwei Anfragen weiß sie nichts Neues — eine Session, die gerade nur
-  denkt, sieht dort alt aus.
 
 - Touch-Achsen sind nicht auf echter Hardware verifiziert. Falls Tasten spiegel-
   verkehrt reagieren: `TouchInputReadCallback` in `lvgl_port.c`, dort wird

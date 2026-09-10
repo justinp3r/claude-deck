@@ -89,8 +89,7 @@ static void apply_usage(JsonDocument &d)
 {
     ui_panel_set_usage(d["have"] | false, d["model"] | "",
                        d["h5"]  | -1, d["h5r"] | "",
-                       d["wk"]  | -1, d["wkr"] | "",
-                       d["ctx"] | -1);
+                       d["wk"]  | -1, d["wkr"] | "");
 }
 
 /* Wischen nach links/rechts: die Bridge soll umblaettern. Laeuft im
