@@ -5,16 +5,10 @@
 #include "lvgl_port.h"
 #include "ui_panel.h"
 
-/* Grosszuegig: ein Bash-Befehl darf lang sein, und lieber verwerfen wir eine
- * zu lange Zeile sauber, als mitten im JSON abzuschneiden. */
 #define LINE_MAX 3072
 
-/* Selbsttest: laesst die Bridge einen Tastendruck simulieren ({"t":"tap","v":"allow"}).
- * MUSS im Betrieb 0 bleiben. Waere das an, koennte der Rechner sich selbst
- * freigeben - und genau das soll das Geraet ja verhindern. Nur zum Pruefen
- * der Kette ohne Finger am Display:
- *   arduino-cli compile --build-property build.extra_flags=-DALLOW_REMOTE_TAP=1 ...
- */
+/* Selbsttest ({"t":"tap"}). MUSS im Betrieb 0 bleiben: waere das an, koennte
+ * der Rechner sich selbst freigeben - genau das soll das Geraet verhindern. */
 #ifndef ALLOW_REMOTE_TAP
 #define ALLOW_REMOTE_TAP 0
 #endif
@@ -32,8 +26,7 @@ bool protocol_host_seen(void) { return s_host_seen; }
 static volatile bool          s_pending = false;
 static volatile ui_decision_t s_pending_value = UI_DECISION_DENY;
 
-/* Laeuft im LVGL-Task. Hier nur merken - geschrieben wird aus loop(), damit
- * Serial nicht aus zwei Tasks gleichzeitig beschrieben wird. */
+/* Laeuft im LVGL-Task, gesendet wird aus loop() - Serial nur aus einem Task. */
 static void on_decision(ui_decision_t d)
 {
     s_pending_value = d;
@@ -46,8 +39,6 @@ static void flush_decision(void)
     if (!s_pending) return;
     s_pending = false;
 
-    /* Ohne offene Anfrage gibt es nichts zu beantworten - etwa wenn der
-     * Countdown abgelaufen ist, waehrend der Finger unterwegs war. */
     if (s_active_id[0] == '\0') return;
 
     JsonDocument out;
@@ -92,8 +83,7 @@ static void apply_usage(JsonDocument &d)
                        d["wk"]  | -1, d["wkr"] | "");
 }
 
-/* Wischen nach links/rechts: die Bridge soll umblaettern. Laeuft im
- * LVGL-Task, deshalb hier nur merken - gesendet wird aus loop(). */
+/* Nur merken, gesendet wird aus loop(). */
 static volatile int s_focus_delta = 0;
 static void on_focus(int delta) { s_focus_delta = delta; }
 
@@ -110,12 +100,8 @@ static void apply_idle(JsonDocument &d)
         }
     }
 
-    /* Die Bridge schickt den Ruhezustand alle paar Sekunden erneut. Hat der
-     * Nutzer gerade selbst etwas aufgeschlagen - Verbrauchsanzeige oder
-     * Detailansicht -, waere ein Wechsel hierher ein Rausschmiss mitten im
-     * Lesen. Die Daten werden trotzdem aktualisiert, nur die Ansicht bleibt.
-     * Eine echte Freigabeanfrage darf weiterhin dazwischenfunken, die ist
-     * dringend - das macht apply_request. */
+    /* Daten immer uebernehmen, aber nicht die Ansicht wechseln, solange der Nutzer
+     * selbst usage oder detail offen hat. Eine Anfrage darf dazwischenfunken. */
     ui_state_t cur = ui_panel_current();
     if (cur != UI_STATE_USAGE && cur != UI_STATE_DETAIL) {
         ui_panel_show(UI_STATE_IDLE);
@@ -134,7 +120,6 @@ static void handle_line(char *line)
 
     if (!strcmp(t, "ping")) { Serial.println("{\"t\":\"pong\"}"); return; }
 
-    /* Alles Weitere fasst die UI an und muss durch das LVGL-Lock. */
     if (!lvgl_port_lock(200)) return;
 
     if (!strcmp(t, "req")) {
@@ -190,8 +175,7 @@ static void flush_focus(void)
     Serial.println();
 }
 
-/* Einzelne Tastendrucke im Monitor - JSON-Zeilen fangen immer mit '{' an,
- * deshalb laesst sich beides ohne Mehrdeutigkeit unterscheiden. */
+/* Tastendruck im Monitor: JSON-Zeilen fangen mit '{' an, das ist eindeutig. */
 static void handle_key(int c)
 {
     if (c >= '1' && c <= '6') {
@@ -224,8 +208,6 @@ void protocol_poll(void)
         } else if (s_len < LINE_MAX - 1) {
             s_line[s_len++] = (char)c;
         } else {
-            /* Zeile zu lang: bis zum naechsten Umbruch verwerfen, statt
-             * ein halbes Objekt zu parsen. */
             s_overflow = true;
         }
     }
@@ -240,10 +222,8 @@ void protocol_tick_second(void)
     if (s_ttl > 0) {
         ui_panel_set_countdown(s_ttl);
     } else {
-        /* Abgelaufen. Das Geraet entscheidet nicht von selbst - die Bridge
-         * laeuft in denselben Timeout und gibt die Frage ans Terminal.
-         * Wie bei apply_idle: wer gerade selbst etwas aufgeschlagen hat, wird
-         * nicht herausgeworfen. */
+        /* Abgelaufen. Das Geraet entscheidet nichts von selbst - die Bridge laeuft in
+         * denselben Timeout und gibt die Frage ans Terminal. */
         s_active_id[0] = '\0';
         ui_state_t cur = ui_panel_current();
         if (cur != UI_STATE_USAGE && cur != UI_STATE_DETAIL) {

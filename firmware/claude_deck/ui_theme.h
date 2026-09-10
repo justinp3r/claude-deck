@@ -1,11 +1,5 @@
-/* Design-Tokens aus dem urspruenglichen Entwurf (siehe CLAUDE.md, Abschnitt
- * Design; die Entwurfsdatei selbst liegt nur noch in der Git-Historie).
- *
- * Das Panel ist 640 x 172 px auf 84,0 x 22,6 mm, also 7,62 px/mm.
- * Daraus folgt die Regel, die alles andere bestimmt: alles Antippbare
- * misst mindestens 66 px Hoehe (8,7 mm). In der Hoehe passen damit genau
- * zwei Reihen uebereinander. Eine dritte gibt es nicht.
- */
+/* Design-Tokens aus dem Entwurf, siehe CLAUDE.md. 640 x 172 px auf 84,0 x 22,6 mm:
+ * alles Antippbare misst mindestens 66 px (8,7 mm), also genau zwei Reihen. */
 #ifndef UI_THEME_H
 #define UI_THEME_H
 
@@ -14,9 +8,6 @@
 #define UI_H                172
 #define UI_PAD_X            20    /* Seitenrand */
 
-/* --- Farben ---
- * Bernstein heisst wartet, Tuerkis heisst laeuft, Rot heisst kaputt.
- * Aus zwei Metern liest man auf 22,6 mm Hoehe keinen Text mehr, nur Farbe. */
 #define UI_C_BG             0x08090A  /* Grundflaeche */
 #define UI_C_TILE           0x141518  /* Kachel-Hintergrund */
 #define UI_C_TILE_BORDER    0x292B2F
@@ -34,16 +25,11 @@
 #define UI_C_TEXT_FAINT     0x6E7370
 #define UI_C_TEXT_HEADER    0x5E635F
 
-/* Beide Tasten tragen denselben Akzent. Unterschieden wird ueber das
- * Gewicht, nicht ueber den Farbton: Accept ist gefuellt, Deny nur umrissen. */
 #define UI_C_ACCENT         0xD97757  /* Anthropic-Orange, beide Tasten */
 #define UI_C_ACCEPT_FG      0x000000  /* Schrift auf der gefuellten Taste */
 #define UI_C_DENY_FG        0xFFFFFF  /* Schrift auf der umrissenen Taste */
 
-/* Verbrauchsbalken. Schwellen aus der Claude-Code-Doku (Nutzungswarnungen):
- * gewarnt wird ab 75 % und erneut ab 95 % der Auslastung. Darunter blau wie in
- * der Weboberflaeche, darueber die beiden Warnstufen.
- * Blau und Rot stammen aus der Farbpalette im Claude-Code-Bundle. */
+/* Schwellen aus der Claude-Code-Doku: gewarnt wird ab 75 % und erneut ab 95 %. */
 #define UI_C_BAR_OK         0x2563EB  /* < 75 %  */
 #define UI_C_BAR_WARN       0xF59E0B  /* >= 75 % */
 #define UI_C_BAR_CRIT       0xDC2626  /* >= 95 % */

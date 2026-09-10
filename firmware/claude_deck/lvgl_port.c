@@ -29,7 +29,6 @@ static esp_io_expander_handle_t io_expander = NULL;
 #define BYTES_PER_PIXEL (LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_RGB565))
 #define BUFF_SIZE (EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * BYTES_PER_PIXEL)
 
-
 static const axs15231b_lcd_init_cmd_t lcd_init_cmds[] = 
 {
   {0x11, (uint8_t []){0x00}, 0, 100},
@@ -124,11 +123,9 @@ static void TouchInputReadCallback(lv_indev_t * indev, lv_indev_data_t *indevDat
   uint8_t read_touchpad_cmd[11] = {0xb5, 0xab, 0xa5, 0x5a, 0x0, 0x0, 0x0, 0x0e,0x0, 0x0, 0x0};
   uint8_t buff[32] = {0};
 
-  /* i2c_master_touch_write_read und NICHT i2c_master_write_read_dev: der
-   * Touchcontroller haengt an Bus 1 (i2c_bsp.c legt ihn auf
-   * user_i2c_port1_handle), die generische Funktion wartet aber auf Bus 0.
-   * Mit der falschen Funktion liefert der Controller Phantomberuehrungen mit
-   * zufaelligen Koordinaten - im Waveshare-Beispiel steht das so drin. */
+  /* i2c_master_touch_write_read und NICHT i2c_master_write_read_dev: der Touch
+   * haengt an Bus 1, die generische Funktion wartet auf Bus 0 und liefert dann
+   * Phantomberuehrungen. (Fehler im Waveshare-Beispiel.) */
   esp_err_t terr = i2c_master_touch_write_read(disp_touch_dev_handle,read_touchpad_cmd,11,buff,32);
 
   uint16_t px = (((uint16_t)buff[2] & 0x0f) << 8) | (uint16_t)buff[3];
@@ -136,28 +133,10 @@ static void TouchInputReadCallback(lv_indev_t * indev, lv_indev_data_t *indevDat
   bool raw_down = (terr == ESP_OK) && (buff[1] > 0 && buff[1] < 5) &&
                   (px <= EXAMPLE_LCD_V_RES) && (py <= EXAMPLE_LCD_H_RES);
 
-  /* --- Entprellung und Wischschwelle ---
-   *
-   * Zwei Probleme, die sich widersprechen:
-   *
-   * 1. Ein einzelner gestoerter I2C-Frame sieht aus wie eine Beruehrung an
-   *    zufaelliger Stelle. Auf einem Freigabegeraet ist das der gefaehrlichste
-   *    denkbare Fehler. Deshalb zaehlt eine Beruehrung erst, wenn zwei
-   *    aufeinanderfolgende Messungen sie bestaetigen und dabei nah beieinander
-   *    liegen.
-   *
-   * 2. Das Panel meldet waehrend einer ruhigen Beruehrung um einige Pixel
-   *    schwankende Werte. LVGL summiert jede Bewegung auf und erkennt ab 50 px
-   *    eine Wischgeste - ohne Gegenmittel wird jeder Tipp zum Wisch.
-   *
-   * Die Loesung ist NICHT, den Punkt einzufrieren: LVGL setzt seine Summe auf
-   * null zurueck, sobald sich der Punkt zwischen zwei Messungen um weniger als
-   * drei Pixel bewegt. Ein eingefrorener Punkt macht damit jede Wischgeste
-   * unmoeglich. Stattdessen wird ab dem Druckbeginn gemessen: solange der
-   * Finger innerhalb von TOUCH_SLOP um seinen Startpunkt bleibt, wird immer
-   * der Startpunkt gemeldet (kein Zittern, also kein Wisch aus einem Tipp).
-   * Ueberschreitet er die Schwelle einmal, folgt die Meldung dem Finger
-   * ungefiltert - dann ist es ein echter Wisch und darf sich aufsummieren. */
+  /* Zwei Gegenmittel: eine Beruehrung zaehlt erst, wenn zwei aufeinanderfolgende
+   * Messungen sie bestaetigen (ein Stoerframe darf nichts freigeben), und
+   * innerhalb von TOUCH_SLOP um den Druckbeginn wird der Startpunkt gemeldet,
+   * damit Zittern nicht als Wisch durchgeht. Erst darueber folgt sie dem Finger. */
 #define TOUCH_CONFIRM   2      /* Messungen, die uebereinstimmen muessen */
 #define TOUCH_NEAR     40      /* px, innerhalb derer sie als gleich gelten */
 #define TOUCH_SLOP     20      /* px Abstand vom Start, ab dem es ein Wisch ist */
@@ -175,10 +154,7 @@ static void TouchInputReadCallback(lv_indev_t * indev, lv_indev_data_t *indevDat
     sliding = false;
     indevData->state = LV_INDEV_STATE_RELEASED;
   } else if (!reported) {
-    /* Bestaetigungsphase: nur hier wird auf Naehe geprueft. Sie soll einen
-     * einzelnen Stoerframe aussortieren, nicht eine schnelle Bewegung - waere
-     * die Pruefung auch spaeter aktiv, zerfiele jeder Wisch in Fragmente,
-     * weil der Finger zwischen zwei Messungen weiter als TOUCH_NEAR springt. */
+    /* Nur hier auf Naehe pruefen - sonst zerfiele jeder schnelle Wisch. */
     int dx = (int)px - (int)cand_x, dy = (int)py - (int)cand_y;
     bool near = (dx < TOUCH_NEAR && dx > -TOUCH_NEAR && dy < TOUCH_NEAR && dy > -TOUCH_NEAR);
 
@@ -242,8 +218,7 @@ static void example_lvgl_unlock(void)
   xSemaphoreGive(lvgl_mux);
 }
 
-/* LVGL laeuft in einem eigenen FreeRTOS-Task. Jeder Zugriff auf lv_* von aussen
- * (also aus loop() oder aus dem Serial-Handler) muss durch dieses Lock. */
+/* Jeder lv_*-Zugriff von aussen muss durch dieses Lock. */
 bool lvgl_port_lock(int timeout_ms)
 {
   if (lvgl_mux == NULL) return false;

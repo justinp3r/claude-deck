@@ -1,12 +1,7 @@
 #!/usr/bin/env node
 /* PermissionRequest-Hook: fragt das Geraet statt des Terminals.
- *
- * Die eine Regel, an der alles haengt: JEDER Fehlerpfad gibt die Frage
- * zurueck ans Terminal. Keine Bridge, kein Geraet, Zeit abgelaufen, kaputtes
- * JSON - immer Exit 0 ohne Ausgabe. Laut Hook-Doku laesst das den normalen
- * Berechtigungsablauf unveraendert, der Dialog erscheint also wie sonst.
- * Ein stummes Geraet darf nie ein zustimmendes sein.
- */
+ * JEDER Fehlerpfad endet mit Exit 0 ohne Ausgabe - also keine Entscheidung, und
+ * der normale Dialog erscheint. Ein stummes Geraet darf nie zustimmen. */
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';

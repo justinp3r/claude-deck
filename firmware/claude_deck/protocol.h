@@ -1,24 +1,5 @@
-/* Zeilenprotokoll zwischen Bridge (Mac) und Geraet.
- *
- * Ein JSON-Objekt pro Zeile, in beide Richtungen. JSON und nicht etwas
- * Einfacheres, weil hier echte Shell-Befehle durchlaufen: die enthalten
- * Anfuehrungszeichen, Tabs und Zeilenumbrueche, und genau dafuer ist das
- * Escaping von JSON da.
- *
- * Bridge -> Geraet
- *   {"t":"req","id":..,"agent":..,"init":..,"tool":..,"l1":..,"l2":..,
- *    "meta":..,"full":..,"cwd":..,"note":..,"warn":..,
- *    "qpos":1,"qtot":1,"next":"","ttl":30}
- *   {"t":"idle","hdr":..,"clock":..,"rows":[{"n":..,"a":..,"on":true},..]}
- *   {"t":"cancel","id":..}      Anfrage ist anderweitig beantwortet
- *   {"t":"link","up":false}     Bridge meldet sich ab
- *   {"t":"ping"}
- *
- * Geraet -> Bridge
- *   {"t":"hello"}               nach dem Start
- *   {"t":"decision","id":..,"v":"allow"|"deny"}
- *   {"t":"pong"}
- */
+/* Zeilenprotokoll zur Bridge: ein JSON-Objekt pro Zeile, in beide Richtungen.
+ * Welche Nachrichten es gibt, steht in protocol.cpp und in bridge/bridge.mjs. */
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 

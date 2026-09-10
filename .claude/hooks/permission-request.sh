@@ -1,13 +1,7 @@
 #!/usr/bin/env bash
-# Startet den PermissionRequest-Hook.
-#
-# Diese Zwischenschicht existiert nur, um node zu finden: Hooks laufen ohne
-# Shell-Profil, und bei einer nvm-Installation liegt node an einem Pfad, den
-# nur das Profil kennt. Ohne den Umweg endet der Hook mit Exit 127.
-#
-# Findet sich kein node, endet das Skript mit Exit 0 und ohne Ausgabe - also
-# "keine Entscheidung", und Claude Code fragt wie gewohnt im Terminal. Auch
-# dieser Pfad darf nichts freigeben.
+# Startet den PermissionRequest-Hook. Diese Zwischenschicht sucht nur node: Hooks
+# laufen ohne Shell-Profil und finden ein nvm-node sonst nicht (Exit 127).
+# Kein node gefunden = Exit 0 ohne Ausgabe = keine Entscheidung, das Terminal fragt.
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

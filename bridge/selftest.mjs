@@ -1,9 +1,6 @@
 #!/usr/bin/env node
-/* Prueft die Kette Hook -> Bridge -> Geraet -> Hook.
- *
- * Setzt eine laufende Bridge und eine Firmware mit ALLOW_REMOTE_TAP=1 voraus:
- *   arduino-cli compile --build-property compiler.cpp.extra_flags=-DALLOW_REMOTE_TAP=1 ...
- */
+/* Prueft die Kette Hook -> Bridge -> Geraet -> Hook. Setzt eine laufende Bridge
+ * und eine Firmware mit ALLOW_REMOTE_TAP=1 voraus (flash.sh -t). */
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';

@@ -19,23 +19,19 @@ arduino-cli core update-index >/dev/null
 arduino-cli core install esp32:esp32 2>&1 | tail -1
 
 say "3/5  Bibliotheken"
-# LVGL 9.3.0 ist die Version, gegen die der SquareLine-Export und das
-# Waveshare-Beispiel gebaut sind. Neuere 9.x koennen abweichen.
+# LVGL 9.3.0: die Version, gegen die das Waveshare-Beispiel gebaut ist.
 arduino-cli lib install lvgl@9.3.0 2>&1 | tail -1
-# ArduinoJson 7 fuer protocol.cpp. Version 7 ist Pflicht: dort heisst der Typ
-# JsonDocument ohne Groessenangabe, in 6 waere es StaticJsonDocument<N>.
+# ArduinoJson 7 ist Pflicht: erst dort heisst der Typ JsonDocument ohne Groesse.
 arduino-cli lib install ArduinoJson@7.4.3 2>&1 | tail -1
 
 say "4/5  lv_conf.h"
-# LVGL sucht die Datei als "../../lv_conf.h" relativ zu lvgl/src/,
-# sie muss also direkt neben dem lvgl-Ordner liegen.
+# LVGL sucht die Datei direkt neben dem lvgl-Ordner.
 mkdir -p "$ARDUINO_LIBS"
 cp lv_conf.h "$ARDUINO_LIBS/lv_conf.h"
 echo "-> $ARDUINO_LIBS/lv_conf.h"
 
 say "5/5  ctags fuer Apple Silicon"
-# Das mit Arduino geliefertes ctags ist ein x86-Binary. Ohne Rosetta bricht
-# jeder Build ab. universal-ctags ist nativ und laesst sich unterschieben.
+# Arduinos ctags ist ein x86-Binary; ohne Rosetta bricht jeder Build ab.
 CTAGS_DIR="$HOME/Library/Arduino15/packages/builtin/tools/ctags/5.8-arduino11"
 if [ -d "$CTAGS_DIR" ] && [ "$(uname -m)" = "arm64" ]; then
   if ! file -b "$CTAGS_DIR/ctags" 2>/dev/null | grep -q arm64; then

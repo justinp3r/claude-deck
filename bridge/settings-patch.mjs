@@ -1,13 +1,6 @@
 #!/usr/bin/env node
-/* Traegt claude-deck in ~/.claude/settings.json ein oder wieder aus.
- *
- * Zwei Eingriffe:
- *   hooks.PermissionRequest  -> fragt das Geraet statt des Terminals
- *   statusLine               -> Vorschalter, der die Limits abgreift und die
- *                               urspruengliche Statusline unveraendert aufruft
- *
- * Beides ist umkehrbar. Vor jeder Aenderung wird eine Sicherung angelegt.
- */
+/* Traegt Hook und Statusline in ~/.claude/settings.json ein oder wieder aus.
+ * Umkehrbar, vor jeder Aenderung wird gesichert. */
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -18,9 +11,7 @@ const SETTINGS = process.env.CD_SETTINGS || path.join(HOME, '.claude', 'settings
 const RUN_DIR  = path.join(HOME, '.claude-deck');
 const ORIG_SL  = path.join(RUN_DIR, 'original-statusline');
 
-/* Ueber den bash-Wrapper, nicht direkt ueber node: Hooks starten ohne
- * Shell-Profil, und bei einer nvm-Installation liegt node an einem Pfad, den
- * nur das Profil kennt. Der Wrapper sucht ihn robust. */
+/* Ueber den bash-Wrapper: Hooks starten ohne Shell-Profil und finden nvm-node sonst nicht. */
 const HOOK_CMD = `bash ${path.join(REPO, '.claude', 'hooks', 'permission-request.sh')}`;
 const SL_CMD   = `bash ${path.join(REPO, 'bridge', 'statusline.sh')}`;
 
@@ -49,8 +40,7 @@ if (mode === 'install') {
   /* --- Hook --- */
   cfg.hooks ??= {};
   const list = cfg.hooks.PermissionRequest ?? [];
-  /* Einen vorhandenen eigenen Eintrag aktualisieren statt ihn zu ueberspringen -
-   * sonst bleibt nach einem Update der alte Aufrufweg stehen. */
+  /* Vorhandenen eigenen Eintrag aktualisieren, sonst bleibt der alte Aufrufweg stehen. */
   let updated = false;
   for (const g of list) {
     for (const h of g.hooks ?? []) {
@@ -73,8 +63,7 @@ if (mode === 'install') {
   if (isOurs(cur)) {
     console.log('Statusline: war schon vorgeschaltet');
   } else {
-    /* Den bisherigen Befehl merken, damit der Vorschalter ihn aufrufen und
-     * die Deinstallation ihn zurueckschreiben kann. */
+    /* Bisherigen Befehl merken - der Vorschalter ruft ihn auf, die Deinstallation schreibt ihn zurueck. */
     fs.writeFileSync(ORIG_SL, cur ?? '');
     cfg.statusLine = { type: 'command', command: SL_CMD };
     console.log(cur ? `Statusline: vorgeschaltet (vorher: ${cur})`

@@ -1,16 +1,6 @@
 #!/usr/bin/env bash
-# Richtet claude-deck auf diesem Mac ein.
-#
-#   ./scripts/install.sh              einrichten
-#   ./scripts/install.sh --uninstall  rueckgaengig machen
-#
-# Was passiert:
-#   1. Bridge als Hintergrunddienst (startet beim Anmelden mit)
-#   2. PermissionRequest-Hook in ~/.claude/settings.json
-#   3. Statusline-Vorschalter (holt die Limits, ruft deine bisherige auf)
-#
-# Nicht noetig: arduino-cli, Arduino IDE, irgendetwas auf dem Geraet. Die
-# Firmware bleibt drauf, das Geraet ist gegenueber dem Rechner zustandslos.
+# Richtet claude-deck auf diesem Mac ein: Bridge als Dienst, PermissionRequest-Hook
+# und Statusline-Vorschalter. Rueckgaengig mit --uninstall.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

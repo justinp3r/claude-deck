@@ -1,10 +1,5 @@
-/* Die fuenf Zustaende des Freigabepanels.
- *
- * Regel aus dem Design: ein Zustand pro Bild. Kein Zustand mischt sich mit
- * einem anderen - Ruhe zeigt keine Tasten, Freigabe zeigt keine Sessionliste.
- * Deshalb liegt jeder Zustand in einem eigenen Container, und immer ist
- * genau einer davon sichtbar.
- */
+/* Die sechs Zustaende des Panels. Ein Zustand pro Bild: jeder liegt in einem
+ * eigenen Container, sichtbar ist immer genau einer. */
 #ifndef UI_PANEL_H
 #define UI_PANEL_H
 
@@ -33,8 +28,7 @@ typedef enum {
 /* Wird gerufen, wenn der Nutzer entschieden hat. Laeuft im LVGL-Task. */
 typedef void (*ui_decision_cb_t)(ui_decision_t decision);
 
-/* Baut alle fuenf Zustaende auf und zeigt UI_STATE_IDLE.
- * Muss aus dem LVGL-Task heraus oder unter lvgl_port_lock() laufen. */
+/* Baut alle Zustaende auf. Nur aus dem LVGL-Task oder unter lvgl_port_lock(). */
 void ui_panel_init(void);
 
 void ui_panel_show(ui_state_t state);
@@ -47,21 +41,15 @@ void ui_panel_set_decision_cb(ui_decision_cb_t cb);
 /* Kopfzeile im Ruhezustand, z.B. ("3 sessions", "21:14"). */
 void ui_panel_set_idle_header(const char *left, const char *right);
 
-/* Wie viele Sessionzeilen die Ruheansicht fasst. Drei sind sichtbar, der Rest
- * wird durch Wischen erreicht. */
+/* Drei Zeilen sind sichtbar, der Rest wird durch Wischen erreicht. */
 #define UI_IDLE_ROWS     9
 #define UI_IDLE_PER_PAGE 3
 
-/* Eine Sessionzeile. slot 0..UI_IDLE_ROWS-1. active faerbt den Punkt tuerkis.
- * Ein leerer name blendet die Zeile komplett aus - Punkt inklusive. */
+/* Ein leerer name blendet die Zeile komplett aus - Punkt inklusive. */
 void ui_panel_set_idle_row(int slot, bool active, const char *name, const char *age);
 
-/* Die Freigabeanfrage. Gilt fuer den Freigabe- und den Warteschlangenzustand.
- *   agent     Name unter der Kachel, z.B. "backend"
- *   tool      Chip, z.B. "Bash"
- *   line1/2   der Befehl, zweizeilig; line2 darf NULL sein
- *   meta      z.B. "a4f1 - 12 s"
- */
+/* Freigabeanfrage: Name unter der Kachel, Tool-Chip, Befehl zweizeilig
+ * (line2 darf NULL sein), meta z.B. "a4f1 - 12 s". */
 void ui_panel_set_request(const char *agent, const char *tool,
                           const char *line1, const char *line2, const char *meta);
 
@@ -78,22 +66,15 @@ void ui_panel_set_disconnected(const char *headline, const char *body, const cha
 /* Sekundenzaehler im Kopf der Freigabe. */
 void ui_panel_set_countdown(int seconds);
 
-/* Verbrauchsanzeige. have=false zeigt an, dass noch keine Daten da sind.
- * Prozente 0..100, -1 heisst "dieses Fenster fehlt". Die Resetzeiten kommen
- * fertig formatiert von der Bridge ("2h 14m"), das spart Datumsrechnung hier.
- *
- * Nur die beiden kontoweiten Fenster. Der Kontextverbrauch gehoert einer
- * einzelnen Session und hat auf einer geraeteweiten Uebersicht nichts zu
- * suchen - bei mehreren Sessions sprang die Zahl zwischen ihnen hin und her. */
+/* Prozente 0..100, -1 heisst "dieses Fenster fehlt". Resetzeiten kommen
+ * fertig formatiert von der Bridge. Nur die beiden kontoweiten Fenster. */
 void ui_panel_set_usage(bool have,
                         int five_pct,  const char *five_reset,
                         int week_pct,  const char *week_reset);
 
-/* Wischen nach links/rechts in der Warteschlange: die Bridge soll die
- * naechste bzw. vorige offene Anfrage nach vorn holen. */
+/* Wischen links/rechts: naechste bzw. vorige offene Anfrage. */
 typedef void (*ui_focus_cb_t)(int delta);
 void ui_panel_set_focus_cb(ui_focus_cb_t cb);
-
 
 #ifdef __cplusplus
 }

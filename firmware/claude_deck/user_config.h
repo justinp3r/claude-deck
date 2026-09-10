@@ -1,14 +1,7 @@
-// Pinbelegung ESP32-S3-Touch-LCD-3.49 **V2** (PCB-Silkscreen "Rev1.1", QC-Aufkleber "V2").
-//
-// Uebernommen aus dem offiziellen Waveshare-V2-Beispiel:
-//   github.com/waveshareteam/ESP32-S3-Touch-LCD-3.49-V2
-//   -> Arduino/examples/10_LVGL_V9_Test/user_config.h
-//
-// ACHTUNG: Gegenueber V1 sind zwei Pinpaare getauscht. Mit den V1-Werten bleibt das
-// Display schwarz, obwohl der Rest laeuft:
-//   Backlight   V1 = GPIO 8    ->  V2 = GPIO 42
-//   LCD-Reset   V1 = GPIO 21   ->  V2 = gar kein GPIO, sondern TCA9554-Expander Bit 5
-// Das aeltere Repo ohne "-V2" im Namen ist die V1-Variante und passt hier NICHT.
+// Pinbelegung ESP32-S3-Touch-LCD-3.49 **V2** (Silkscreen "Rev1.1", QC-Aufkleber "V2").
+// Mit den V1-Werten bleibt das Display schwarz, obwohl der Rest laeuft:
+//   Backlight  V1 = GPIO 8   -> V2 = GPIO 42
+//   LCD-Reset  V1 = GPIO 21  -> V2 = kein GPIO, sondern TCA9554 Bit 5
 
 #ifndef USER_CONFIG_H
 #define USER_CONFIG_H
@@ -48,18 +41,15 @@
 #define EXAMPLE_EXIO_PIN_SYS_EN    (1ULL << 6)
 #define EXAMPLE_EXIO_PIN_NS_MODE   (1ULL << 7)
 
-
 #define I2C_TOUCH_ADDR                    0x3b
 #define EXAMPLE_PIN_NUM_TOUCH_RST         (-1)
 #define EXAMPLE_PIN_NUM_TOUCH_INT         (-1)
-
 
 #define LVGL_TICK_PERIOD_MS    5
 #define LVGL_TASK_MAX_DELAY_MS 500
 #define LVGL_TASK_MIN_DELAY_MS 5
 #define LVGL_TASK_STACK_SIZE   (8 * 1024)
 #define LVGL_TASK_PRIORITY     2
-
 
 /*bl test*/
 #define Backlight_Testing 0
@@ -69,28 +59,17 @@
 
 #define EXAMPLE_IMU_ADDR 0x6b
 
-
 #define USER_DISP_ROT_90    1
 #define USER_DISP_ROT_NONO  0
-// 640 x 172 quer. Das Panel ist nativ 172 x 640 hochkant, LVGL dreht per Software
-// um 270 Grad. Das gesamte Design geht von 640 x 172 aus,
-// dieser Wert darf also nicht auf USER_DISP_ROT_NONO zurueck.
+// Nativ 172 x 640 hochkant, LVGL dreht auf 640 x 172 quer. Darf nicht zurueck.
 #define Rotated USER_DISP_ROT_90
-
-
-
 
 #define EXAMPLE_LCD_H_RES 172   
 #define EXAMPLE_LCD_V_RES 640
-
 
 #define LCD_NOROT_HRES     172
 #define LCD_NOROT_VRES     640
 #define LVGL_DMA_BUFF_LEN (LCD_NOROT_HRES * 64 * 2)
 #define LVGL_SPIRAM_BUFF_LEN (EXAMPLE_LCD_H_RES * EXAMPLE_LCD_V_RES * 2)
-
-
-
-
 
 #endif

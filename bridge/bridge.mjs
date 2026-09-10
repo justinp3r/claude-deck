@@ -1,15 +1,7 @@
 #!/usr/bin/env node
-/* claude-deck Bridge.
- *
- * Haelt den seriellen Port zum Geraet und einen Unix-Socket fuer die Hooks.
- * Warum ein Daemon dazwischen und nicht der Hook direkt am Port: den Port kann
- * immer nur ein Prozess offen haben, und es laufen typischerweise mehrere
- * Claude-Code-Sessions gleichzeitig. Der Daemon serialisiert das und kennt
- * dadurch auch die Warteschlange.
- *
- * Ohne npm-Abhaengigkeiten: der serielle Port wird mit stty konfiguriert und
- * danach als normale Datei geoeffnet.
- */
+/* claude-deck Bridge: haelt den seriellen Port zum Geraet und einen Unix-Socket
+ * fuer die Hooks. Ein Daemon, weil den Port nur ein Prozess offen haben kann und
+ * mehrere Sessions gleichzeitig fragen. Ohne npm: stty stellt den Port ein. */
 import fs from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
@@ -25,13 +17,9 @@ const DEAD_MS   = 12000;   /* ohne Lebenszeichen gilt das Geraet als weg */
 
 const log = (...a) => console.error(new Date().toISOString().slice(11, 19), ...a);
 
-/* ------------------------------------------------------------------ */
-/* Serieller Port                                                      */
-/* ------------------------------------------------------------------ */
+/* --- Serieller Port --- */
 
 function findPort() {
-  /* Uebersteuerung zum Testen: CLAUDE_DECK_PORT=/dev/null-ish simuliert
-   * ein gezogenes Kabel, ohne dass jemand daran ziehen muss. */
   const forced = process.env.CLAUDE_DECK_PORT;
   if (forced) return fs.existsSync(forced) ? forced : null;
   const dev = fs.readdirSync('/dev');
@@ -41,10 +29,8 @@ function findPort() {
   return hit ? `/dev/${hit}` : null;
 }
 
-/* Lesen per nicht-blockierendem readSync im Intervall statt per Stream:
- * fs.createReadStream auf einem TTY verhaelt sich in Node unzuverlaessig und
- * kann den Event-Loop blockieren. Ein Zeichengeraet mit O_NONBLOCK abzufragen
- * ist unspektakulaer, aber vorhersagbar. */
+/* readSync im Intervall statt Stream: createReadStream auf einem TTY blockiert
+ * in Node den Event-Loop. */
 class Device {
   constructor(onLine) {
     this.onLine = onLine;
@@ -126,13 +112,9 @@ class Device {
   }
 }
 
-/* ------------------------------------------------------------------ */
-/* Anfrage lesbar machen                                               */
-/* ------------------------------------------------------------------ */
+/* --- Anfrage lesbar machen --- */
 
-/* Breite der Kontextspalte in Zeichen: 272 px bei IBM Plex Mono 21 px
- * (0,6 em Vorschub) sind rund 21 Zeichen. Im Warteschlangen-Zustand ist die
- * Spalte etwas schmaler, deshalb 20. */
+/* 272 px in Mono 21 sind rund 21 Zeichen, in der Warteschlange 20. */
 const COLS = 20;
 
 function splitTwo(text) {
@@ -182,9 +164,7 @@ function describe(h) {
   };
 }
 
-/* ------------------------------------------------------------------ */
-/* Bridge                                                              */
-/* ------------------------------------------------------------------ */
+/* --- Bridge --- */
 
 const pending  = new Map();   /* id -> entry */
 const order    = [];          /* Reihenfolge der offenen Anfragen */
@@ -216,8 +196,7 @@ function until(epoch) {
 function usagePayload() {
   const r = usage?.rate_limits;
   const five = r?.five_hour, week = r?.seven_day;
-  /* Nur die kontoweiten Fenster. context_window gehoert einer einzelnen
-   * Session und wuerde auf einer geraeteweiten Uebersicht nur springen. */
+  /* Nur die kontoweiten Fenster - context_window gehoert einer einzelnen Session. */
   return {
     t: 'usage',
     have: !!(five || week),
@@ -237,9 +216,7 @@ function idlePayload() {
     .sort((a, b) => b[1].last - a[1].last)
     .slice(0, 9);
 
-  /* Der Anzeigename kommt aus dem Verzeichnis, und zwei Sessions im selben
-   * Ordner sind voellig normal. Nur dann - und nur dann - haengen wir ein
-   * Stueck der Session-ID an, damit die Zeilen unterscheidbar bleiben. */
+  /* Zwei Sessions im selben Ordner: dann ein Stueck der ID anhaengen. */
   const seen = new Map();
   for (const [, v] of top) seen.set(v.name, (seen.get(v.name) || 0) + 1);
 
@@ -289,8 +266,6 @@ function settle(id, value) {
 
 function onDeviceLine(msg) {
   if (msg.t === 'focus') {
-    /* Wischen am Geraet blaettert durch die offenen Anfragen. Die Bridge
-     * bleibt die Wahrheit darueber, was vorne liegt. */
     if (order.length > 1) {
       const d = msg.d > 0 ? 1 : -1;
       if (d > 0) order.push(order.shift());
@@ -308,12 +283,9 @@ function onDeviceLine(msg) {
   }
 }
 
-/* ------------------------------------------------------------------ */
-/* Socket fuer die Hooks                                               */
-/* ------------------------------------------------------------------ */
+/* --- Socket fuer die Hooks --- */
 
-/* Eine gesehene Session merken. Quelle ist entweder ein Hook-Aufruf oder die
- * Statusline - beide liefern dieselben Felder. */
+/* Quelle ist ein Hook-Aufruf oder die Statusline - beide liefern dieselben Felder. */
 function noteSession(p) {
   if (!p || !p.session_id) return;
   const dir = p.cwd || p.workspace?.current_dir || '';
@@ -333,19 +305,15 @@ function pushIdle() {
 }
 
 function onHook(socket, req) {
-  /* Testkanal fuer scripts/selftest.mjs: simuliert einen Tastendruck am Geraet.
-   * Wirkt nur, wenn die Firmware mit ALLOW_REMOTE_TAP=1 gebaut ist - im
-   * Normalbetrieb verwirft das Geraet das unbekannte Kommando. */
+  /* Testkanal fuer selftest.mjs. Wirkt nur mit ALLOW_REMOTE_TAP=1 in der Firmware. */
   if (req.op === 'usage') {
     const before = usage ? JSON.stringify(usage.rate_limits || {}) : '';
     usage = req.payload || null;
     const after = usage ? JSON.stringify(usage.rate_limits || {}) : '';
     if (after !== before) log('Limits:', after || '(keine rate_limits im Payload)');
 
-    /* Die Statusline laeuft in jeder aktiven Session, dauernd - und liefert
-     * session_id und cwd mit. Damit kennt die Bridge eine Session ab dem
-     * ersten Rendern, nicht erst bei der ersten Freigabeanfrage. Genau das
-     * macht die Ruheansicht ueberhaupt nuetzlich. */
+    /* Die Statusline laeuft in jeder Session und kennt session_id und cwd - daher
+     * steht eine Session in der Liste, bevor sie zum ersten Mal fragt. */
     noteSession(usage);
 
     if (dev.alive) {
@@ -389,7 +357,7 @@ function onHook(socket, req) {
   order.push(id);
   log('Anfrage', id, e.view.tool, JSON.stringify(e.view.full).slice(0, 60));
 
-  /* Legt der Hook auf (Nutzer hat im Terminal entschieden), Eintrag raeumen. */
+  /* Hook aufgelegt (im Terminal entschieden): Eintrag raeumen. */
   socket.on('close', () => {
     if (pending.has(id)) {
       clearTimeout(e.timer);
@@ -439,12 +407,9 @@ setInterval(() => {
     wasAlive = alive;
     if (!alive) {
       dev.close();
-      /* Offene Anfragen ans Terminal zurueckgeben. */
       for (const id of [...order]) settle(id, null);
     }
   }
-  /* Nur senden, wenn sich wirklich etwas geaendert hat. Spart Funkverkehr und
-   * vermeidet, dass das Geraet staendig neu gezeichnet wird. */
   if (alive && order.length === 0) pushIdle();
 }, PING_MS);
 

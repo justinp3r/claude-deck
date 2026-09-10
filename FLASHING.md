@@ -163,4 +163,4 @@ board `ESP32S3 Dev Module`, **PSRAM: OPI PSRAM**, flash size `16MB`, partition
 `3MB APP/9.9MB FATFS`, **USB CDC On Boot: Enabled**.
 
 The code deliberately lives in `main.cpp`, not in the `.ino` — the reasoning is in
-the file header of [main.cpp](firmware/claude_deck/main.cpp).
+the header of [claude_deck.ino](firmware/claude_deck/claude_deck.ino).

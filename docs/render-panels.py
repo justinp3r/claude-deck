@@ -63,13 +63,10 @@ def approval():
     p.append(rect(10, 10, 152, 152, TILE, r=11, stroke=TILE_BORDER))
     cw = min(152 - 28, 112)
     p += clawd(10 + (152 - cw) // 2, 30, cw)
-    # Name unten in der Kachel: LVGL richtet BOTTOM_MID mit -12 aus, die
-    # Zeilenhoehe von Mono 18 ist 22 - Mitte also bei 162-12-11.
+    # LVGL richtet BOTTOM_MID mit -12 aus, Zeilenhoehe Mono 18 ist 22.
     p.append(txt(86, 139, "claude-deck", 18, "#B7BAB6", anchor="middle"))
 
-    # Kontextspalte: Flex-Container y=12, 148 hoch, mittig, 6 px Abstand.
-    # Kindhoehen 22 + 27 + 25 + 25 + 17 = 116, plus 4x6 = 140, also 4 px
-    # Versatz oben. Daraus die Mittellinien der fuenf Zeilen.
+    # Kontextspalte: Flex y=12, 148 hoch, mittig - daraus die fuenf Mittellinien.
     x = 178
     p.append(rect(x, 21, 12, 12, AMBER, r=6))
     p.append(txt(x + 22, 27, "Approval requested", 17, TEXT_MID, fam=SANS))

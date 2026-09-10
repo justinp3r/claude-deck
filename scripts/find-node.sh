@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
-# Gibt den Pfad zu node aus, oder nichts (Exit 1).
-#
-# Warum das noetig ist: Hooks und LaunchAgents starten ohne dein Shell-Profil.
-# Wer node ueber nvm installiert hat - und das ist der Normalfall - hat es unter
-# ~/.nvm/versions/node/<version>/bin, und dieser Pfad kommt ausschliesslich
-# durch die Profil-Einrichtung in die PATH. Ein blosses "node" schlaegt dort
-# mit "env: node: No such file or directory" fehl.
+# Gibt den Pfad zu node aus, oder nichts (Exit 1). Noetig, weil Hooks und
+# LaunchAgents ohne Shell-Profil starten und ein nvm-node damit nicht in der PATH ist.
 
 for c in \
   "$(command -v node 2>/dev/null)" \

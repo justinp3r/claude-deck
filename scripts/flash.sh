@@ -14,9 +14,8 @@ while getopts "mct" o; do case $o in m) MONITOR=1;; c) COMPILE_ONLY=1;; t) SELFT
 
 EXTRA=()
 if [ "$SELFTEST" = "1" ]; then
-  # compiler.cpp.extra_flags und NICHT build.extra_flags: letzteres traegt beim
-  # ESP32-Core die USB-Defines (ARDUINO_USB_CDC_ON_BOOT, USB-Modus). Wer das
-  # ueberschreibt, bekommt ein Board, das stumm bleibt.
+  # compiler.cpp.extra_flags und NICHT build.extra_flags - dort stehen die
+  # USB-Defines des ESP32-Cores, ueberschrieben bleibt das Board stumm.
   EXTRA=(--build-property "compiler.cpp.extra_flags=-DALLOW_REMOTE_TAP=1")
   echo "ACHTUNG: Build mit Selbsttest-Schalter - nicht im Betrieb verwenden."
 fi
@@ -30,8 +29,7 @@ fi
 
 PORT="$(detect_port)" || { echo "Kein Board gefunden. USB-Kabel steckt?"; exit 1; }
 
-# Die Bridge haelt den seriellen Port. Vor dem Flashen anhalten, danach wieder
-# starten - sonst schlaegt der Upload mit "Resource busy" fehl.
+# Die Bridge haelt den Port - sonst "Resource busy".
 BRIDGE_PLIST="$HOME/Library/LaunchAgents/com.claude-deck.bridge.plist"
 BRIDGE_WAS_UP=0
 if [ -f "$BRIDGE_PLIST" ] && launchctl list 2>/dev/null | grep -q com.claude-deck.bridge; then
@@ -47,8 +45,7 @@ restore_bridge() {
   fi
 }
 trap restore_bridge EXIT
-# Uebersetzen und Flashen in einem Aufruf: "upload" allein baut nicht neu und
-# wuerde sonst ein aelteres Binary schreiben.
+# In einem Aufruf: "upload" allein baut nicht neu und schriebe ein altes Binary.
 echo "Uebersetzen und flashen auf $PORT ..."
 arduino-cli compile --fqbn "$FQBN" ${EXTRA[@]+"${EXTRA[@]}"} --upload -p "$PORT" "$SKETCH_DIR" 2>&1 \
   | grep -vE "GNU-stack|deprecated and will be removed"

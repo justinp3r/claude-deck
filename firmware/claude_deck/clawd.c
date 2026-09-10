@@ -1,8 +1,7 @@
 #include "clawd.h"
 #include "ui_theme.h"
 
-/* Masse aus der Vorlage, ausgemessen im 400x400-Original und auf die
- * Bounding-Box (x 12..389, y 91..343) bezogen. Einheit: 378 breit, 253 hoch. */
+/* Masse aus der Vorlage, bezogen auf die Bounding-Box (378 x 253). */
 #define SRC_W 378
 #define SRC_H 253
 
@@ -30,8 +29,6 @@ static const int LEG_W[4] = {  35,  34,  33,  37 };
 
 #define SX(v, w) (((v) * (w) + SRC_W / 2) / SRC_W)
 
-/* Pro Exemplar, nicht global: es gibt zwei Kacheln (Freigabe und
- * Warteschlange), und beide sollen blinzeln. */
 typedef struct {
     lv_obj_t *body;
     lv_obj_t *eye[2];
@@ -64,11 +61,8 @@ static lv_obj_t *block(lv_obj_t *parent, int x, int y, int w, int h, uint32_t co
 {
     lv_obj_t *o = lv_obj_create(parent);
     lv_obj_remove_style_all(o);
-    /* lv_obj_create setzt LV_OBJ_FLAG_CLICKABLE von sich aus (lv_obj.c:
-     * "obj->flags = LV_OBJ_FLAG_CLICKABLE"). Damit faengt jedes Deko-Rechteck
-     * Beruehrungen ab, die dem Elternteil galten - der Treffertest liefert
-     * immer das oberste getroffene Kind. Hier also wieder abschalten und nur
-     * dort gezielt setzen, wo wirklich etwas passieren soll. */
+    /* lv_obj_create setzt LV_OBJ_FLAG_CLICKABLE von sich aus - sonst faengt jedes
+     * Deko-Rechteck die Beruehrung ab, die dem Elternteil galt. */
     lv_obj_remove_flag(o, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_remove_flag(o, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_pos(o, x, y);
@@ -89,14 +83,10 @@ lv_obj_t *clawd_create(lv_obj_t *parent, int width)
     const int W = width;
     const int H = clawd_height(width);
 
-    /* Aussen: wird vom Aufrufer positioniert.
-     * Innen: wippt. Getrennt, damit das Wippen nicht kaputtgeht, sobald der
-     * Aufrufer die Position setzt. */
+    /* root wird positioniert, body wippt - getrennt, damit sich beides nicht stoert. */
     lv_obj_t *root = lv_obj_create(parent);
     lv_obj_remove_style_all(root);
-    /* Nicht klickbar: Tipps sollen an die Flaeche dahinter durchfallen, die
-     * sich darum kuemmert. Sonst schluckt er die Beruehrung, die genau ihm
-     * gilt - er ist ja das Ziel. */
+    /* Nicht klickbar: der Tipp gilt der Flaeche dahinter. */
     lv_obj_remove_flag(root, LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_size(root, W, H);
 
@@ -120,8 +110,7 @@ lv_obj_t *clawd_create(lv_obj_t *parent, int width)
     block(body, 0, SX(ARM_Y, W), SX(ARM_L_W, W), SX(ARM_H, W), UI_C_ACCENT);
     block(body, SX(ARM_R_X, W), SX(ARM_Y, W), SX(ARM_R_W, W), SX(ARM_H, W), UI_C_ACCENT);
 
-    /* Vier Beine, zwei davon gegenphasig - das liest sich als Schritt, ohne
-     * dass sich der Umriss veraendert. */
+    /* Vier Beine, zwei davon gegenphasig - das liest sich als Schritt. */
     for (int i = 0; i < 4; i++) {
         lv_obj_t *leg = block(body, SX(LEG_X[i], W), leg_y, SX(LEG_W[i], W), leg_h, UI_C_ACCENT);
         lv_anim_t a;
@@ -154,18 +143,13 @@ lv_obj_t *clawd_create(lv_obj_t *parent, int width)
     lv_anim_set_repeat_count(&b, LV_ANIM_REPEAT_INFINITE);
     lv_anim_start(&b);
 
-    /* Wippen: zwei Pixel, langsam. Laeuft auf body, deshalb unabhaengig davon,
-     * wohin der Aufrufer root spaeter schiebt. Waehrend einer Regung wird es
-     * angehalten - sonst zerren zwei Animationen an derselben Eigenschaft. */
+    /* Wippen laeuft auf body, unabhaengig davon, wohin root spaeter geschoben wird. */
     bob_start(c);
 
     return root;
 }
 
-
-/* ------------------------------------------------------------------ */
-/* Wippen                                                              */
-/* ------------------------------------------------------------------ */
+/* --- Wippen --- */
 
 static void bob_start(clawd_t *c)
 {

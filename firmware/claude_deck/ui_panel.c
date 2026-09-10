@@ -1,18 +1,6 @@
-/* Alle fuenf Zustaende des Freigabepanels, siehe CLAUDE.md, Abschnitt Design.
- *
- * Saemtliche Texte auf dem Display sind Englisch, die Kommentare Deutsch.
- *
- * Aufbau: ein Screen, darauf fuenf Container gleicher Groesse (640 x 172).
- * Genau einer ist sichtbar, die anderen tragen LV_OBJ_FLAG_HIDDEN. Das
- * kostet etwas Speicher, spart aber jedes Neuaufbauen beim Wechsel und
- * haelt die Regel "ein Zustand pro Bild" strukturell durch.
- *
- * Zur Positionierung: die SVGs im Design geben Text ueber die Grundlinie an,
- * LVGL ueber die obere Kante. Statt Grundlinien umzurechnen (was bei jedem
- * Fontwechsel wieder bricht) sind Textstapel hier in Flex-Container gelegt
- * und mittig ausgerichtet. Das zentriert optisch korrekt, unabhaengig von
- * den Metriken der Schrift.
- */
+/* Die sechs Zustaende des Panels. Texte auf dem Display englisch, Kommentare
+ * deutsch. Textstapel liegen in Flex-Containern, weil das Design Text ueber
+ * die Grundlinie angibt und LVGL ueber die obere Kante. */
 
 #include "lvgl.h"
 #include "ui_panel.h"
@@ -30,9 +18,7 @@ LV_FONT_DECLARE(ui_font_sans_17);
 LV_FONT_DECLARE(ui_font_sans_sb_23);
 LV_FONT_DECLARE(ui_font_sans_sb_26);
 
-/* ------------------------------------------------------------------ */
-/* Zustand                                                             */
-/* ------------------------------------------------------------------ */
+/* --- Zustand --- */
 
 static lv_obj_t *s_layer[UI_STATE_COUNT];
 static ui_state_t s_current = UI_STATE_IDLE;
@@ -64,29 +50,21 @@ static int  s_countdown = 12;
 static lv_obj_t *s_usage_clock, *s_usage_none, *s_usage_rows;
 static lv_obj_t *s_bar_fill[2], *s_bar_pct[2], *s_bar_reset[2];
 
-/* Gesten. Eine erkannte Geste darf nicht zusaetzlich als Klick durchgehen -
- * LVGL unterdrueckt den Klick von sich aus NICHT. Sonst wuerde ein Wisch, der
- * auf Accept beginnt, die Freigabe ausloesen. */
+/* LVGL unterdrueckt den Klick bei einer erkannten Geste NICHT - ein Wisch, der
+ * auf Accept beginnt, wuerde sonst zusaetzlich freigeben. */
 static bool          s_gesture_in_press = false;
 static ui_state_t    s_before_usage = UI_STATE_IDLE;
 static ui_focus_cb_t s_focus_cb = NULL;
 
-/* ------------------------------------------------------------------ */
-/* Bausteine                                                           */
-/* ------------------------------------------------------------------ */
+/* --- Bausteine --- */
 
-/* Nackter Container: kein Hintergrund, kein Rand, kein Padding, kein Scrollen.
- * lv_obj_create() bringt per Default Theme-Styling mit, das hier ueberall
- * stoert - deshalb einmal zentral abraeumen. */
+/* Nackter Container: lv_obj_create bringt Theme-Styling mit, das hier stoert. */
 static lv_obj_t *bare(lv_obj_t *parent, int w, int h)
 {
     lv_obj_t *o = lv_obj_create(parent);
     lv_obj_remove_style_all(o);
-    /* lv_obj_create setzt LV_OBJ_FLAG_CLICKABLE von sich aus (lv_obj.c:
-     * "obj->flags = LV_OBJ_FLAG_CLICKABLE"). Damit faengt jedes Deko-Rechteck
-     * Beruehrungen ab, die dem Elternteil galten - der Treffertest liefert
-     * immer das oberste getroffene Kind. Hier also wieder abschalten und nur
-     * dort gezielt setzen, wo wirklich etwas passieren soll. */
+    /* lv_obj_create setzt LV_OBJ_FLAG_CLICKABLE von sich aus - sonst faengt jedes
+     * Deko-Rechteck die Beruehrung ab, die dem Elternteil galt. */
     lv_obj_remove_flag(o, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_size(o, w, h);
     lv_obj_remove_flag(o, LV_OBJ_FLAG_SCROLLABLE);
@@ -141,8 +119,6 @@ static void build_tile(lv_obj_t *parent, int x, int w, request_view_t *v)
     lv_obj_t *clawd = clawd_create(tile, cw);
     lv_obj_align(clawd, LV_ALIGN_TOP_MID, 0, 20);
 
-    /* Sessionnamen sind oft lang ("claude-deck"). Ohne feste Breite
-     * waechst das Label mit LV_SIZE_CONTENT ueber den Kachelrand hinaus. */
     v->agent = label(tile, "backend", &ui_font_mono_18, 0xB7BAB6);
     lv_obj_set_width(v->agent, w - 16);
     lv_label_set_long_mode(v->agent, LV_LABEL_LONG_DOT);
@@ -189,9 +165,7 @@ static void build_context(lv_obj_t *parent, int x, int w,
     v->line2 = label(col, "main --force",    &ui_font_mono_21, UI_C_TEXT);
     v->meta  = label(col, "a4f1 \xC2\xB7 12 s", &ui_font_mono_14, UI_C_TEXT_FAINT);
 
-    /* Echte Befehle sind oft laenger als die Spalte. Ohne feste Breite waechst
-     * ein Label mit LV_SIZE_CONTENT einfach weiter und schiebt sich unter die
-     * Tasten. Deshalb hier abschneiden - die volle Zeile zeigt die Detailansicht. */
+    /* Ohne feste Breite schiebt sich ein langer Befehl unter die Tasten. */
     lv_obj_t *clipped[4] = { v->status, v->line1, v->line2, v->meta };
     for (int i = 0; i < 4; i++) {
         lv_obj_set_width(clipped[i], w);
@@ -201,9 +175,7 @@ static void build_context(lv_obj_t *parent, int x, int w,
     lv_obj_set_width(v->status, w - 22);
 }
 
-/* ------------------------------------------------------------------ */
-/* Tasten                                                              */
-/* ------------------------------------------------------------------ */
+/* --- Tasten --- */
 
 static void decide(ui_decision_t d)
 {
@@ -213,8 +185,7 @@ static void decide(ui_decision_t d)
 /* Beginnt ein neuer Druck, ist noch keine Geste gelaufen. */
 static void clear_gesture_cb(lv_event_t *e) { LV_UNUSED(e); s_gesture_in_press = false; }
 
-/* An jedem antippbaren Element: Druckbeginn merken, damit ein Wisch, der hier
- * startet, nicht als Tipp endet. */
+/* Druckbeginn merken, damit ein Wisch von hier nicht als Tipp endet. */
 static void guard_taps(lv_obj_t *obj)
 {
     lv_obj_add_event_cb(obj, clear_gesture_cb, LV_EVENT_PRESSED, NULL);
@@ -234,8 +205,7 @@ static void deny_cb(lv_event_t *e)
     decide(UI_DECISION_DENY);
 }
 
-/* Grundform beider Tasten. 168 x 66 px, also 22,0 x 8,7 mm - die Untergrenze,
- * unterhalb derer man nicht mehr sicher trifft. */
+/* 168 x 66 px = 22,0 x 8,7 mm - die Untergrenze, unter der man nicht mehr trifft. */
 static lv_obj_t *button_base(lv_obj_t *parent, int y, const char *txt,
                              uint32_t fg, lv_event_cb_t cb)
 {
@@ -268,14 +238,10 @@ static lv_obj_t *deny_button(lv_obj_t *parent, int y)
     return b;
 }
 
-/* ------------------------------------------------------------------ */
-/* Die fuenf Zustaende                                                 */
-/* ------------------------------------------------------------------ */
+/* --- Die fuenf Zustaende --- */
 
-/* ruhe - der haeufigste Zustand. Keine Tasten, keine Kacheln, kein Rahmen.
- * Nur wer laeuft und wie lange schon. */
-/* Eine Zeile ist 34 hoch, 5 Abstand. Drei davon passen in 112 px - genau das
- * ist ein "Blatt". Mehr Sessions verschieben die Liste blattweise. */
+/* ruhe - wer laeuft und wie lange schon. */
+/* Zeile 34 hoch plus 5 Abstand, drei davon sind ein Blatt (112 px). */
 #define IDLE_ROW_H   34
 #define IDLE_ROW_GAP  5
 #define IDLE_PAGE_H  (UI_IDLE_PER_PAGE * IDLE_ROW_H + (UI_IDLE_PER_PAGE - 1) * IDLE_ROW_GAP)
@@ -288,8 +254,7 @@ static int idle_pages(void)
     return (s_idle_count + UI_IDLE_PER_PAGE - 1) / UI_IDLE_PER_PAGE;
 }
 
-/* Positionssteg rechts: zeigt, dass es weitergeht. Kein Bedienelement,
- * sondern dieselbe Sprache wie die Warteschlangenleiste im Design. */
+/* Positionssteg rechts: Information, kein Bedienelement. */
 static void idle_apply_page(bool animate)
 {
     int pages = idle_pages();
@@ -335,16 +300,12 @@ static bool idle_scroll(int delta)
 
 static void build_idle(lv_obj_t *root)
 {
-    /* Ohne Bridge ist genau das der Zustand: nichts laeuft. Ein frisch
-     * geflashtes Geraet soll das sagen, nicht leer bleiben. */
     s_idle_left = label(root, "no sessions", &ui_font_mono_16, UI_C_TEXT_HEADER);
     lv_obj_set_pos(s_idle_left, UI_PAD_X, 14);
 
     s_idle_right = label(root, "", &ui_font_mono_16, UI_C_TEXT_HEADER);
     lv_obj_align(s_idle_right, LV_ALIGN_TOP_RIGHT, -UI_PAD_X, 14);
 
-    /* Sichtfenster: schneidet ab, was nicht auf das Blatt passt.
-     * LVGL beschneidet Kinder am Elternrand, solange OVERFLOW_VISIBLE aus ist. */
     lv_obj_t *view = bare(root, IDLE_LIST_W, IDLE_PAGE_H);
     lv_obj_set_pos(view, UI_PAD_X, 46);
 
@@ -372,8 +333,6 @@ static void build_idle(lv_obj_t *root)
         lv_obj_add_flag(row, LV_OBJ_FLAG_HIDDEN);
     }
 
-    /* Ist nichts los, laeuft Clawd durch die Leere. Nur dann - sobald eine
-     * Session da ist, gehoert der Platz der Liste. */
     s_idle_stroll = clawd_create(root, 140);
     lv_obj_set_pos(s_idle_stroll, -140, 58);
     {
@@ -411,8 +370,7 @@ static void build_approval(lv_obj_t *root)
     deny_button(root,   UI_BTN_BOT_Y);
 }
 
-/* warteschlange - der Zustand, der beim Bauen gern vergessen wird und im
- * Betrieb sofort auftritt. Die Leiste links zeigt, wie viele warten. */
+/* warteschlange - die Leiste links zeigt, wie viele warten. */
 static void build_queue(lv_obj_t *root)
 {
     for (int i = 0; i < 2; i++) {
@@ -437,8 +395,7 @@ static void build_queue(lv_obj_t *root)
     deny_button(root,   UI_BTN_BOT_Y);
 }
 
-/* detail - der ganze Befehl. Hier ist die volle Breite die einzige Ressource,
- * also verschwindet alles andere. Warnung zuletzt, nicht zuerst. */
+/* detail - der ganze Befehl ueber die volle Breite. */
 static void build_detail(lv_obj_t *root)
 {
     s_detail_header = label(root, "Bash \xC2\xB7 backend-refactor",
@@ -469,8 +426,7 @@ static void build_detail(lv_obj_t *root)
                             &ui_font_mono_14, UI_C_ORANGE);
 
     const int cw = UI_W - 2 * UI_PAD_X;
-    /* Hier ist die volle Breite die einzige Ressource, die es gibt: der Befehl
-     * darf umbrechen (dafuer ist diese Ansicht da), alles andere wird gekuerzt. */
+    /* Nur der Befehl darf umbrechen, alles andere wird gekuerzt. */
     lv_obj_set_width(s_detail_cmd, cw);
     lv_label_set_long_mode(s_detail_cmd, LV_LABEL_LONG_WRAP);
     lv_obj_t *dclip[3] = { s_detail_cwd, s_detail_conseq, s_detail_warn };
@@ -480,8 +436,7 @@ static void build_detail(lv_obj_t *root)
     }
 }
 
-/* getrennt - das Geraet weiss nicht mehr, was laeuft. Es sagt, was passiert
- * ist und wo die Freigaben jetzt landen. Kein Ausrufezeichen. */
+/* getrennt - sagt, was passiert ist und wo die Freigaben jetzt landen. */
 static void build_disconnected(lv_obj_t *root)
 {
     lv_obj_t *bar = bare(root, 6, UI_H);
@@ -504,10 +459,7 @@ static void build_disconnected(lv_obj_t *root)
                         &ui_font_mono_16, UI_C_TEXT_FAINT);
 }
 
-/* usage - was das Zeitfenster und die Woche noch hergeben.
- * Erreichbar durch Wischen nach unten, zurueck durch Wischen nach oben.
- * Bewusst ohne sichtbare Schaltflaeche: auf 22,6 mm Hoehe ist jedes
- * Bedienelement Platz, der dem Inhalt fehlt. */
+/* usage - Limits, erreichbar durch Wischen nach unten. */
 
 #define BAR_X     112
 #define BAR_W     286
@@ -528,9 +480,6 @@ static void build_usage(lv_obj_t *root)
     lv_obj_t *hdr = label(root, "Usage", &ui_font_mono_16, UI_C_TEXT_HEADER);
     lv_obj_set_pos(hdr, UI_PAD_X, 14);
 
-    /* Oben rechts steht auf jedem Schirm dasselbe: die Uhrzeit. Gespeist wird
-     * sie aus dem Ruhezustand, den die Bridge mindestens einmal pro Minute
-     * schickt - auch waehrend die Verbrauchsanzeige offen ist. */
     s_usage_clock = label(root, "", &ui_font_mono_16, UI_C_TEXT_HEADER);
     lv_obj_align(s_usage_clock, LV_ALIGN_TOP_RIGHT, -UI_PAD_X, 14);
 
@@ -546,9 +495,6 @@ static void build_usage(lv_obj_t *root)
     lv_obj_set_style_text_align(s_usage_none, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(s_usage_none, LV_ALIGN_CENTER, 0, 12);
 
-    /* Zwei Zeilen statt vormals drei: der Block waere sonst kopflastig. Er
-     * belegt ROW_STEP + Zeilenhoehe, also rund 63 px; mittig zwischen Linie
-     * (y=40) und Unterkante bleiben oben wie unten je 34 px. */
     s_usage_rows = bare(root, UI_W, UI_H - 72);
     lv_obj_set_pos(s_usage_rows, 0, 72);
 
@@ -585,9 +531,7 @@ static void build_usage(lv_obj_t *root)
     lv_obj_add_flag(s_usage_rows, LV_OBJ_FLAG_HIDDEN);
 }
 
-/* ------------------------------------------------------------------ */
-/* Aufbau und Wechsel                                                  */
-/* ------------------------------------------------------------------ */
+/* --- Aufbau und Wechsel --- */
 
 static ui_state_t s_before_detail = UI_STATE_APPROVAL;
 
@@ -606,9 +550,7 @@ static void open_detail_cb(lv_event_t *e)
     ui_panel_show(UI_STATE_DETAIL);
 }
 
-/* Eine Geste wandert vom gedrueckten Objekt nach oben bis zum Screen
- * (LV_OBJ_FLAG_GESTURE_BUBBLE ist bei LVGL an jedem Kind gesetzt), deshalb
- * reicht ein Handler am Screen. */
+/* Gesten blubbern bis zum Screen hoch, ein Handler dort reicht. */
 static void gesture_cb(lv_event_t *e)
 {
     LV_UNUSED(e);
@@ -620,9 +562,7 @@ static void gesture_cb(lv_event_t *e)
 
     switch (lv_indev_get_gesture_dir(indev)) {
     case LV_DIR_BOTTOM:
-        /* Erst in der Sessionliste zurueckblaettern. Steht sie schon oben,
-         * ist die Geste frei fuer die Verbrauchsanzeige - so wie man es von
-         * einer Liste erwartet, die man ueber den Anfang hinauszieht. */
+        /* Erst in der Liste zurueckblaettern; steht sie oben, ist die Geste frei. */
         if (idle_scroll(-1)) break;
         if (s_current != UI_STATE_USAGE) {
             s_before_usage = s_current;
@@ -635,8 +575,6 @@ static void gesture_cb(lv_event_t *e)
         break;
     case LV_DIR_LEFT:
     case LV_DIR_RIGHT:
-        /* Blaettern in der Warteschlange - beantwortet die Frage
-         * "wer wartet denn noch", ohne dass man blind entscheiden muss. */
         if ((s_current == UI_STATE_APPROVAL || s_current == UI_STATE_QUEUE) && s_focus_cb)
             s_focus_cb(lv_indev_get_gesture_dir(indev) == LV_DIR_LEFT ? 1 : -1);
         break;
@@ -646,7 +584,6 @@ static void gesture_cb(lv_event_t *e)
 }
 
 void ui_panel_set_focus_cb(ui_focus_cb_t cb) { s_focus_cb = cb; }
-
 
 void ui_panel_init(void)
 {
@@ -671,8 +608,6 @@ void ui_panel_init(void)
 
     lv_obj_add_event_cb(scr, gesture_cb, LV_EVENT_GESTURE, NULL);
 
-    /* Ein Tipp auf die Kachel klappt den Kontext auf, ein Tipp im Detail
-     * geht zurueck. */
     lv_obj_add_flag(s_layer[UI_STATE_DETAIL], LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(s_layer[UI_STATE_DETAIL], detail_close_cb, LV_EVENT_CLICKED, NULL);
     guard_taps(s_layer[UI_STATE_DETAIL]);
@@ -706,9 +641,7 @@ ui_state_t ui_panel_current(void) { return s_current; }
 
 void ui_panel_set_decision_cb(ui_decision_cb_t cb) { s_decision_cb = cb; }
 
-/* ------------------------------------------------------------------ */
-/* Inhalte                                                             */
-/* ------------------------------------------------------------------ */
+/* --- Inhalte --- */
 
 void ui_panel_set_idle_header(const char *left, const char *right)
 {
@@ -716,9 +649,6 @@ void ui_panel_set_idle_header(const char *left, const char *right)
     if (right) {
         lv_label_set_text(s_idle_right, right);
         lv_obj_align(s_idle_right, LV_ALIGN_TOP_RIGHT, -UI_PAD_X, 14);
-        /* Dieselbe Uhr in der Verbrauchsanzeige. Die kommt nur mit dem
-         * Ruhezustand herein, und der laeuft weiter, waehrend usage offen
-         * ist - sonst stuende dort eine Uhrzeit von vor dem Aufschlagen. */
         lv_label_set_text(s_usage_clock, right);
         lv_obj_align(s_usage_clock, LV_ALIGN_TOP_RIGHT, -UI_PAD_X, 14);
     }
@@ -728,8 +658,7 @@ void ui_panel_set_idle_row(int slot, bool active, const char *name, const char *
 {
     if (slot < 0 || slot >= UI_IDLE_ROWS) return;
 
-    /* Ohne Namen gibt es die Zeile nicht - vorher blieb hier ein Punkt ohne
-     * Text stehen, was aussah, als liefe etwas Namenloses. */
+    /* Ohne Namen keine Zeile - sonst stuende dort ein Punkt ohne Text. */
     if (!name || !*name) {
         lv_obj_add_flag(s_idle_row[slot], LV_OBJ_FLAG_HIDDEN);
     } else {

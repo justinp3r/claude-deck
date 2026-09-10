@@ -1,15 +1,5 @@
-/* claude-deck - Firmware fuer ESP32-S3-Touch-LCD-3.49 V2.
- *
- * Warum hier und nicht in der .ino: Die .ino-Datei laeuft durch den
- * Arduino-Praeprozessor, der per ctags Funktionsprototypen einfuegt. Auf
- * Apple Silicon ist das mitgelieferte ctags ein x86-Binary und der Ersatz
- * verhaelt sich anders, wodurch die Prototypen falsch eingefuegt werden.
- * Als normales C++ uebersetzt, faellt das Problem weg.
- *
- * Ablauf: Solange sich die Bridge nicht gemeldet hat, laeuft eine Demo durch
- * die sechs Zustaende - damit ein frisch geflashtes Geraet ohne Mac etwas zeigt.
- * Sobald die erste Zeile ueber Serial kommt, uebernimmt das Protokoll.
- */
+/* Firmware fuer ESP32-S3-Touch-LCD-3.49 V2. Warum main.cpp und nicht die .ino:
+ * siehe claude_deck.ino. */
 
 #include <Arduino.h>
 
@@ -39,11 +29,8 @@ static const int DEMO_LEN = sizeof(DEMO_ORDER) / sizeof(DEMO_ORDER[0]);
 
 void setup()
 {
-    /* Der USB-CDC-Empfangspuffer ist per Default nur 256 Byte gross, und
-     * begin() setzt ihn nur, wenn er nicht schon vorgegeben ist. Eine
-     * Freigabeanfrage mit vollem Befehl ist leicht 300+ Byte - die ginge
-     * sonst still verloren, weil sie in einem Rutsch ankommt. Muss vor
-     * begin() stehen. */
+    /* Muss vor begin() stehen: Default sind 256 Byte, eine Anfrage ist groesser
+     * und kommt in einem Rutsch - sie ginge sonst still verloren. */
     Serial.setRxBufferSize(4096);
     Serial.begin(115200);
 
