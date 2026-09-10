@@ -543,8 +543,11 @@ static void build_usage(lv_obj_t *root)
     lv_obj_set_style_text_align(s_usage_none, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(s_usage_none, LV_ALIGN_CENTER, 0, 12);
 
-    s_usage_rows = bare(root, UI_W, UI_H - 56);
-    lv_obj_set_pos(s_usage_rows, 0, 60);
+    /* Zwei Zeilen statt vormals drei: der Block waere sonst kopflastig. Er
+     * belegt ROW_STEP + Zeilenhoehe, also rund 63 px; mittig zwischen Linie
+     * (y=40) und Unterkante bleiben oben wie unten je 34 px. */
+    s_usage_rows = bare(root, UI_W, UI_H - 72);
+    lv_obj_set_pos(s_usage_rows, 0, 72);
 
     static const char *names[USAGE_ROWS] = { "5-hour", "Weekly" };
     for (int i = 0; i < USAGE_ROWS; i++) {

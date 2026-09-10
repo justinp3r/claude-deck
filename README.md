@@ -8,15 +8,16 @@ next to the keyboard and answers exactly one question:
 Instead of dismissing every prompt in the terminal, it shows up on the device. One
 tap on **Accept** or **Deny** decides what Claude Code does next.
 
-```
-┌──────────┬────────────────────────────┬─────────────┐
-│          │ ● Approval requested       │   Accept    │  ← filled, black text
-│  Clawd   │ [Bash]                     ├─────────────┤
-│          │ git push origin            │    Deny     │  ← outlined, white text
-│ backend  │ main --force               │             │
-└──────────┴────────────────────────────┴─────────────┘
-   640 × 172 px · 84 × 22.6 mm · both buttons 22 × 8.7 mm
-```
+![Approval request: the Clawd tile on the left, the command in the middle, a filled Accept button above an outlined Deny button on the right](docs/img/panel-approval.svg)
+
+![Idle view: three running sessions with status dots and how long each has been going](docs/img/panel-idle.svg)
+
+640 × 172 px on 84 × 22.6 mm. Both buttons are 22 × 8.7 mm — the point below
+which you stop hitting them reliably.
+
+<sub>Drawn from the firmware's own layout: coordinates, sizes and colours come
+straight out of `ui_theme.h`, `ui_panel.c` and `clawd.c` via
+[`docs/render-panels.py`](docs/render-panels.py). Not photographs.</sub>
 
 ## Status
 
@@ -97,6 +98,8 @@ it.
 | `usage` | 5-hour window and week as bars |
 | `disconnected` | red bar, `Bridge unreachable` |
 
+![Usage view: a 5-hour bar at 82% in orange and a weekly bar at 38% in blue, each with its percentage and time until reset](docs/img/panel-usage.svg)
+
 The usage bars follow the thresholds at which Claude Code itself warns:
 blue below 75%, orange from 75%, red from 95%.
 
@@ -131,6 +134,7 @@ lv_conf.h                    LVGL configuration
 agent-panel-design.html      design reference: six states as SVG
 SquareLineStudioExport/      first draft from SquareLine Studio, reference only
 docs/vendor/                 reference sketch from Waveshare
+docs/img/, docs/render-panels.py   the panel images in this README
 ```
 
 Neither the bridge nor the hook has npm dependencies.
